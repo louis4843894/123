@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>我的第一個網頁</title>
+</head>
+<body>
+    <h1>歡迎來到我的網站！</h1>
+    <p>這是一個簡單的 HTML 範例。</p>
+    <button onclick="alert('你按了按鈕！')">點我一下</button>
+</body>
+</html>

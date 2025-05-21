@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>系所篩選</title>
+  <link rel="stylesheet" href="filter.css">
+</head>
+<body>
+  <form id="filter-form">
+    <h2>篩選標籤</h2>
+    <label><input type="checkbox" name="tag[]" value="口試"> 口試</label>
+    <label><input type="checkbox" name="tag[]" value="筆試"> 筆試</label>
+    <label><input type="checkbox" name="tag[]" value="書面審查"> 書面審查</label>
+    <label><input type="checkbox" name="tag[]" value="國文平均成績"> 國文平均成績</label>
+    <label><input type="checkbox" name="tag[]" value="英文平均成績"> 英文平均成績</label>
+    <label><input type="checkbox" name="tag[]" value="成績排名"> 成績排名</label>
+    <button type="submit">篩選</button>
+  </form>
+
+  <div id="results">
+    <!-- 篩選後的結果顯示在這裡 -->
+  </div>
+
+  <script src="filter.js"></script>
+</body>
+</html>
+
+body {
+  font-family: sans-serif;
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+#filter-form {
+  border: 1px solid #ddd;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 2rem;
+}
+
+#filter-form label {
+  display: inline-block;
+  margin-right: 1rem;
+  margin-bottom: .5rem;
+  cursor: pointer;
+}
+
+#filter-form button {
+  display: block;
+  margin-top: 1rem;
+  padding: .5rem 1rem;
+}
+
+#results .dept {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid #eee;
+}
+#results .dept:last-child {
+  border-bottom: none;
+
+
+
+
+JavaScript
+document.getElementById('filter-form').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  // 收集所有勾選的標籤
+  const checked = Array.from(
+    document.querySelectorAll('input[name="tag[]"]:checked')
+  ).map(cb => cb.value);
+
+  // 組成 query string
+  const params = new URLSearchParams();
+  checked.forEach(tag => params.append('tag[]', tag));
+
+  // 發 AJAX 請求到後端
+  const res = await fetch('filter_departments.php?' + params.toString());
+  const data = await res.json();
+
+  // 清空並渲染結果
+  const container = document.getElementById('results');
+  if (data.length === 0) {
+    container.innerHTML = '<p>沒有符合條件的系所。</p>';
+    return;
+  }
+
+  container.innerHTML = data.map(d => `
+    <div class="dept">
+      <strong>${d.department_name}</strong>
+      <div>標籤：${d.tags.join('、')}</div>
+    </div>
+  `).join('');
+});
+
+
+
+
+
+php
+<?php
+header('Content-Type: application/json; charset=utf-8');
+
+// 1. 接收勾選的標籤
+$tags = isset($_GET['tag']) ? array_filter($_GET['tag']) : [];
+
+// 2. DB 連線（請填入你的 host/db/user/pass）
+$pdo = new PDO('mysql:host=localhost;dbname=fju;charset=utf8mb4', 'user', 'pass', [
+  PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+]);
+
+// 3. 如果有選標籤，用 AND 方式同時符合；否則拉全部
+if (count($tags) > 0) {
+  // 準備 IN 子句
+  $placeholders = implode(',', array_fill(0, count($tags), '?'));
+  $sql = "
+    SELECT d.department_name,
+           GROUP_CONCAT(e.exam_type_name ORDER BY e.exam_type_name SEPARATOR ',') AS tags
+      FROM Department d
+      JOIN DepartmentExamType det ON d.department_id = det.department_id
+      JOIN ExamType e ON det.exam_type_id = e.exam_type_id
+     WHERE e.exam_type_name IN ($placeholders)
+     GROUP BY d.department_id
+     HAVING COUNT(DISTINCT e.exam_type_name) = ?
+     ORDER BY d.department_name
+  ";
+  $stmt = $pdo->prepare($sql);
+  // bind 標籤 + 數量
+  $stmt->execute(array_merge($tags, [count($tags)]));
+} else {
+  // 不篩選，顯示全部
+  $sql = "
+    SELECT d.department_name,
+           GROUP_CONCAT(e.exam_type_name ORDER BY e.exam_type_name SEPARATOR ',') AS tags
+      FROM Department d
+      LEFT JOIN DepartmentExamType det ON d.department_id = det.department_id
+      LEFT JOIN ExamType e ON det.exam_type_id = e.exam_type_id
+     GROUP BY d.department_id
+     ORDER BY d.department_name
+  ";
+  $stmt = $pdo->query($sql);
+}
+
+// 4. 整理並輸出 JSON
+$result = [];
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+  $result[] = [
+    'department_name' => $row['department_name'],
+    'tags'            => $row['tags'] ? explode(',', $row['tags']) : []
+  ];
+}
+
+echo json_encode($result, JSON_UNESCAPED_UNICODE);
+
+
+}
+
