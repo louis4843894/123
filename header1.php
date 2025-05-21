@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($department_name); ?> - 轉系資訊平台</title>
+    <title><?php echo htmlspecialchars($pageTitle); ?> - 轉系資訊平台</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <style>
@@ -51,24 +51,6 @@
         .info-label {
             font-weight: 600;
             color: #6c757d;
-        }
-
-        .career-list {
-            list-style-type: none;
-            padding-left: 0;
-        }
-
-        .career-list li {
-            margin-bottom: 0.5rem;
-            padding-left: 1.5rem;
-            position: relative;
-        }
-
-        .career-list li:before {
-            content: "•";
-            color: #0d6efd;
-            position: absolute;
-            left: 0;
         }
 
         .compare-badge {
@@ -134,25 +116,6 @@
             background-color: #d4edda;
         }
 
-        .career-list {
-            list-style-type: none;
-            padding-left: 0;
-            margin: 0;
-        }
-
-        .career-list li {
-            margin-bottom: 0.5rem;
-            padding-left: 1.5rem;
-            position: relative;
-        }
-
-        .career-list li:before {
-            content: "•";
-            color: #0d6efd;
-            position: absolute;
-            left: 0;
-        }
-
         .table-responsive {
             max-height: 80vh;
             overflow-y: auto;
@@ -175,21 +138,6 @@
             padding: 2rem;
             color: #6c757d;
         }
-
-        .btn-go {
-            padding: 0.5rem 1rem;
-            background-color: rgb(75, 100, 158);
-            text-decoration: none;
-            color: white;
-            border: none !important;
-            outline: none !important;
-            border-radius: 0.5rem;
-        }
-
-        .btn-go:hover {
-            color: white;
-            background-color: rgb(91, 120, 189);
-        }
     </style>
 </head>
 
@@ -197,9 +145,25 @@
     <!-- 導航欄 -->
     <nav class="navbar navbar-expand-lg navbar-dark mb-4">
         <div class="container">
-            <a class="navbar-brand"
-                href="<?= isset($_GET['college']) ? 'index.php?college=' . urlencode($_GET['college']) : 'index.php' ?>">
-                <i class="bi bi-arrow-left"></i> 返回
+            <a class="navbar-brand" href="index.php">
+                <i class="bi bi-arrow-left"></i> 返回首頁
             </a>
+            <div class="d-flex">
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="accountDropdown"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            帳號管理
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+                            <li><a class="dropdown-item" href="account_settings.php">修改資料</a></li>
+                            <li><a class="dropdown-item" href="logout.php">登出</a></li>
+                        </ul>
+                    </div>
+                <?php else: ?>
+                    <a href="login.php" class="btn btn-outline-light me-2">登入</a>
+                    <a href="register.php" class="btn btn-outline-light">註冊</a>
+                <?php endif; ?>
+            </div>
         </div>
     </nav>

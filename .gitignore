@@ -62,4 +62,10 @@ apache/
 
 # 環境設定檔
 .env
-config.local.php 
+config.local.php
+
+# 其他
+config.php
+*.sublime-project
+*.sublime-workspace
+reset_debug.log 
