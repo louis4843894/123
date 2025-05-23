@@ -34,6 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$user) {
+    $_SESSION = array();
+    session_destroy();
+    header('Location: login.php');
+    exit();
+}
 ?>
 
 <div class="container min-vh-100 d-flex align-items-center justify-content-center py-5">
@@ -54,6 +61,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
                         <div class="mb-3">
                             <label class="form-label">新密碼</label>
                             <input type="password" name="password" class="form-control" placeholder="新密碼">
+                            <small class="form-text text-muted">如果不想更改密碼，請留空</small>
                         </div>
                         <button type="submit" class="btn w-100 text-white" style="background-color:rgb(148, 164, 189);">更新資料</button>
                     </form>

@@ -1,0 +1,250 @@
+/* 全局樣式 */
+.body {
+    background-color: #f8f9fa;
+    font-family: 'Microsoft JhengHei', Arial, sans-serif;
+}
+
+/* 導航欄樣式 */
+.navbar {
+    background: linear-gradient(90deg, rgb(168, 170, 173) 0%, rgb(114, 115, 116) 100%);
+    padding: 10px 20px;
+    font-weight: bold;
+}
+
+.navbar a {
+    color: white;
+}
+
+.navbar a:hover {
+    color: rgb(212, 215, 217);
+}
+
+/* 卡片樣式 */
+.card {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.5rem;
+}
+
+/* 表格樣式 */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.table tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.table-responsive {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+/* 搜尋框樣式 */
+.search-box {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    margin-bottom: 1.5rem;
+}
+
+/* 按鈕樣式 */
+.btn-more {
+    padding: 0.5rem 1.5rem;
+    background-color: rgb(104, 128, 151);
+    text-decoration: none;
+    color: white;
+    border-radius: 0.5rem;
+}
+
+.btn-more:hover {
+    color: white;
+    background-color: rgb(115, 149, 179);
+}
+
+.btn-search {
+    padding: 0.5rem 1.5rem;
+    background-color: rgb(75, 100, 158);
+    text-decoration: none;
+    color: white;
+    border: none !important;
+    outline: none !important;
+    border-radius: 0.5rem;
+}
+
+.btn-search:hover {
+    color: white;
+    background-color: rgb(91, 120, 189);
+}
+
+.btn-add {
+    padding: 0.5rem 1.5rem;
+    background-color: rgb(87, 148, 100);
+    text-decoration: none;
+    color: white;
+    border: none !important;
+    outline: none !important;
+    border-radius: 0.5rem;
+}
+
+.btn-add:hover {
+    color: white;
+    background-color: rgb(100, 170, 115);
+}
+
+.btn-remove {
+    padding: 0.5rem 1.5rem;
+    background-color: rgb(203, 82, 66);
+    text-decoration: none;
+    color: white;
+    border: none !important;
+    outline: none !important;
+    border-radius: 0.5rem;
+}
+
+.btn-remove:hover {
+    color: white;
+    background-color: rgb(207, 109, 96);
+}
+
+.btn-compare {
+    padding: 0.5rem 1.5rem;
+    color: white;
+    outline: none;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    background-color: rgb(87, 148, 100);
+}
+
+.btn-compare:hover {
+    background-color: rgb(124, 205, 151);
+    color: black !important;
+}
+
+.btn-compare1 {
+    padding: 0.5rem 1.5rem;
+    color: white;
+    outline: none;
+    border-radius: 0.5rem;
+    text-decoration: none;
+}
+
+/* 系所連結樣式 */
+.department-link {
+    color: #0d6efd;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.department-link:hover {
+    color: #0b5ed7;
+    text-decoration: underline;
+}
+
+/* 下拉選單樣式 */
+.dropdown-menu {
+    background-color: lightgray;
+    color: rgb(42, 38, 40);
+    border-radius: 0.5rem;
+}
+
+.dropdown-menu .dropdown-item:hover {
+    background-color: #f5f5f5;
+    color: rgb(42, 38, 40);
+}
+
+/* 分頁樣式 */
+.page-item.active .page-link {
+    background-color: rgb(85, 89, 87);
+    border-color: rgb(65, 68, 67);
+    color: #fff;
+}
+
+.page-link {
+    color: rgb(85, 89, 87);
+    border-color: rgb(65, 68, 67);
+}
+
+.page-link:hover {
+    background-color: rgba(224, 232, 228, 0.5);
+    color: #081c15;
+}
+
+/* 學院按鈕樣式 */
+.btn-Faculty {
+    background-color: #e9ecef;
+    color: #333;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 2rem;
+    margin: 0.4rem;
+    font-weight: 500;
+    transition: 0.2s ease;
+}
+
+.btn-Faculty:hover {
+    background-color: #d6d6d6;
+    color: black;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 學院篩選包裝器樣式 */
+.college-filter-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+/* 系所簡介樣式 */
+.department-intro {
+    color: #6c757d;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 操作按鈕樣式 */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-buttons .btn {
+    white-space: nowrap;
+    padding: 0.375rem 0.75rem;
+}
+
+.college-filter {
+    background-color: #e9ecef;
+    border: none;
+    border-radius: 2rem;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #333;
+    margin: 6px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.college-filter:hover {
+    background-color: #ced4da;
+    color: #000;
+    cursor: pointer;
+}

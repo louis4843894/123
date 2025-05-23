@@ -24,34 +24,31 @@ include 'header.php';
     <div class="col-md-6">
         <div class="card shadow">
             <div class="card-body">
-                <?php if ($record): ?>
-                    <h4 class="card-title mb-4 text-center">設定新密碼</h4>
-                    <form method="POST" action="reset_password_process.php">
-                        <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
-                        <div class="mb-3">
-                            <label class="form-label">新密碼</label>
-                            <input type="password" name="password" class="form-control" required minlength="6">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">確認密碼</label>
-                            <input type="password" name="confirm_password" class="form-control" required minlength="6">
-                        </div>
-                        <button type="submit" class="btn w-100" style="background-color:rgb(148, 164, 189);">重設密碼</button>
-                    </form>
-                <?php else: ?>
-                    <h4 class="text-danger mb-3">
-                        <i class="bi bi-exclamation-triangle-fill"></i> 此連結無效或已過期
-                    </h4>
-                    <p>請重新申請忘記密碼流程。</p>
-                    <div class="mt-3 text-center">
-                        <a href="forgot_password.php" class="btn btn-outline-primary btn-sm me-2">重新申請</a>
-                        <a href="login.php" class="btn btn-outline-secondary btn-sm me-2">返回登入</a>
-                        <a href="index.php" class="btn btn-outline-dark btn-sm">返回首頁</a>
-                    </div>
-                <?php endif; ?>
-            </div>
+
+<?php if ($record): ?>
+      <h4 class="card-title mb-4">設定新密碼</h4>
+      <form method="POST" action="reset_password_process.php">
+        <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
+        <div class="mb-3 text-start">
+          <label class="form-label">新密碼</label>
+          <input type="password" name="password" class="form-control" required>
         </div>
+        <button type="submit" class="btn btn-success w-100">提交</button>
+      </form>
+<?php else: ?>
+      <h4 class="text-danger mb-3">
+        <i class="bi bi-exclamation-triangle-fill"></i> 此連結無效或已過期
+      </h4>
+      <p>請重新申請忘記密碼流程。</p>
+      <div class="mt-3 text-center">
+        <a href="forgot_password.php" class="btn btn-outline-primary btn-sm me-2">重新申請</a>
+        <a href="login.php" class="btn btn-outline-secondary btn-sm me-2">返回登入</a>
+        <a href="index.php" class="btn btn-outline-dark btn-sm">返回首頁</a>
+      </div>
+<?php endif; ?>
+
     </div>
+  </div>
 </div>
 
 <?php include 'footer.php'; ?>

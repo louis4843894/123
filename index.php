@@ -13,492 +13,260 @@ $offset = ($page - 1) * $limit;
 
 // 計算總筆數
 if (!empty($search)) {
-    $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM department WHERE department_name LIKE :search");
+    $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM DepartmentTransfer WHERE department_name LIKE :search");
     $count_stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
     $count_stmt->execute();
 } else {
-    $count_stmt = $pdo->query("SELECT COUNT(*) FROM department");
+    $count_stmt = $pdo->query("SELECT COUNT(*) FROM DepartmentTransfer");
 }
 $total_departments = $count_stmt->fetchColumn();
 $total_pages = ceil($total_departments / $limit);
 
 // 撈取當頁資料
-if (!empty($search)) {
-    $stmt = $pdo->prepare("
-        SELECT d.department_id, d.department_name, 
-               GROUP_CONCAT(DISTINCT et.exam_type_name) as exam_types,
-               GROUP_CONCAT(DISTINCT dr.remark_text ORDER BY dr.remark_order) as remarks
-        FROM department d
-        LEFT JOIN departmentexamtype det ON d.department_id = det.department_id
-        LEFT JOIN examtype et ON det.exam_type_id = et.exam_type_id
-        LEFT JOIN departmentremark dr ON d.department_id = dr.department_id
-        WHERE d.department_name LIKE :search
-        GROUP BY d.department_id
-        ORDER BY d.department_id ASC
-        LIMIT :limit OFFSET :offset
-    ");
-    $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
-} else {
-    $stmt = $pdo->prepare("
-        SELECT d.department_id, d.department_name, 
-               GROUP_CONCAT(DISTINCT et.exam_type_name) as exam_types,
-               GROUP_CONCAT(DISTINCT dr.remark_text ORDER BY dr.remark_order) as remarks
-        FROM department d
-        LEFT JOIN departmentexamtype det ON d.department_id = det.department_id
-        LEFT JOIN examtype et ON det.exam_type_id = et.exam_type_id
-        LEFT JOIN departmentremark dr ON d.department_id = dr.department_id
-        GROUP BY d.department_id
-        ORDER BY d.department_id ASC
-        LIMIT :limit OFFSET :offset
-    ");
+try {
+    if (!empty($search)) {
+        $stmt = $pdo->prepare("
+            SELECT d.department_name, dept.intro_summary as department_intro 
+            FROM DepartmentTransfer d
+            LEFT JOIN departments dept ON d.department_name = dept.name
+            WHERE d.department_name LIKE :search 
+            ORDER BY d.department_name ASC 
+            LIMIT :limit OFFSET :offset");
+        $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
+    } else {
+        $stmt = $pdo->prepare("
+            SELECT d.department_name, dept.intro_summary as department_intro 
+            FROM DepartmentTransfer d
+            LEFT JOIN departments dept ON d.department_name = dept.name
+            ORDER BY d.department_name ASC 
+            LIMIT :limit OFFSET :offset");
+    }
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // 如果發生錯誤，使用原始查詢
+    if (!empty($search)) {
+        $stmt = $pdo->prepare("SELECT department_name, '' as department_intro FROM DepartmentTransfer WHERE department_name LIKE :search ORDER BY department_name ASC LIMIT :limit OFFSET :offset");
+        $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
+    } else {
+        $stmt = $pdo->prepare("SELECT department_name, '' as department_intro FROM DepartmentTransfer ORDER BY department_name ASC LIMIT :limit OFFSET :offset");
+    }
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-$stmt->execute();
-$departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$pageTitle = '首頁';
+include 'header.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="zh-TW">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>轉系系統</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
-    <style>
-        body {
-            background-color: #f8f9fa;
-            ;
-            font-family: 'Microsoft JhengHei', Arial, sans-serif;
-        }
-
-        .navbar {
-            background: linear-gradient(90deg, rgb(168, 170, 173) 0%, rgb(114, 115, 116) 100%);
-            padding: 10px 20px;
-            font-weight: bold;
-        }
-
-        .navbar a {
-            color: white;
-        }
-
-        .navbar a:hover {
-            color: rgb(212, 215, 217);
-        }
-
-        .card {
-            border: none;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-            border-radius: 0.5rem;
-        }
-
-        .table {
-            margin-bottom: 0;
-        }
-
-        .table thead th {
-            background-color: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
-        }
-
-        .search-box {
-            background-color: white;
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-            margin-bottom: 1.5rem;
-        }
-
-        .btn-more {
-            padding: 0.5rem 1.5rem;
-            background-color: rgb(104, 128, 151);
-            text-decoration: none;
-            color: white;
-            border-radius: 0.5rem;
-        }
-
-        .btn-more:hover {
-            color: white;
-            background-color: rgb(115, 149, 179)
-        }
-
-        .btn-search {
-            padding: 0.5rem 1.5rem;
-            background-color: rgb(75, 100, 158);
-            text-decoration: none;
-            color: white;
-            border: none !important;
-            outline: none !important;
-            border-radius: 0.5rem;
-        }
-
-        .btn-search:hover {
-            color: white;
-            background-color: rgb(91, 120, 189);
-        }
-
-        .btn-add {
-            padding: 0.5rem 1.5rem;
-            background-color: rgb(87, 148, 100);
-            text-decoration: none;
-            color: white;
-            border: none !important;
-            outline: none !important;
-            border-radius: 0.5rem;
-        }
-
-        .btn-add:hover {
-            color: white;
-            background-color: rgb(100, 170, 115);
-        }
-
-        .btn-remove {
-            padding: 0.5rem 1.5rem;
-            background-color: rgb(203, 82, 66);
-            text-decoration: none;
-            color: white;
-            border: none !important;
-            outline: none !important;
-            border-radius: 0.5rem;
-        }
-
-        .btn-remove:hover {
-            color: white;
-            background-color: rgb(207, 109, 96);
-        }
-
-        .btn-compare {
-            padding: 0.5rem 1.5rem;
-            color: white;
-            outline: none;
-            border-radius: 0.5rem;
-            text-decoration: none;
-            background-color: rgb(87, 148, 100);
-        }
-
-        .btn-compare:hover {
-            background-color: rgb(124, 205, 151);
-            color: black !important;
-        }
-
-        .btn-compare1 {
-            padding: 0.5rem 1.5rem;
-            color: white;
-            outline: none;
-            border-radius: 0.5rem;
-            text-decoration: none;
-        }
-
-        .table-responsive {
-            border-radius: 0.5rem;
-            overflow: hidden;
-        }
-
-        .department-link {
-            color: #0d6efd;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .department-link:hover {
-            color: #0b5ed7;
-            text-decoration: underline;
-        }
-
-        .dropdown-menu {
-            background-color: lightgray;
-            color: rgb(42, 38, 40);
-            border-radius: 0.5rem;
-
-        }
-
-        .dropdown-menu .dropdown-item:hover {
-            background-color: #f5f5f5;
-            color: rgb(42, 38, 40);
-        }
-
-        .page-item.active .page-link {
-            background-color: rgb(85, 89, 87);
-            border-color: rgb(65, 68, 67);
-            color: #fff;
-        }
-
-        .page-link {
-            color: rgb(85, 89, 87);
-            border-color: rgb(65, 68, 67);
-        }
-
-        .page-link:hover {
-            background-color: rgba(224, 232, 228, 0.5);
-            color: #081c15;
-        }
-
-        .btn-Faculty {
-            background-color: #e9ecef;
-            color: #333;
-            border: none;
-            padding: 0.5rem 1.2rem;
-            border-radius: 2rem;
-            margin: 0.4rem;
-            font-weight: 500;
-            transition: 0.2s ease;
-        }
-
-        .btn-Faculty:hover {
-            background-color: #d6d6d6;
-            color: black;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        }
-    </style>
-</head>
-
-<body>
-
-    <div class="container-fluid">
-        <!-- 導覽列 -->
-        <nav class="navbar navbar-expand-lg fixed-top mb-4">
-            <div class="container">
-                <a class="navbar-brand" href="#">
-                    <img src="https://upload.wikimedia.org/wikipedia/zh/thumb/d/da/Fu_Jen_Catholic_University_logo.svg/1200px-Fu_Jen_Catholic_University_logo.svg.png"
-                        alt="" width="30" height="30" class="d-inline-block align-text-top me-2">輔仁大學轉系系統
-                </a>
-                <?php
-                $selected_departments = isset($_COOKIE['compare_departments']) ? json_decode($_COOKIE['compare_departments'], true) : [];
-                $compare_count = count($selected_departments);
-                ?>
-
-                <div class="d-flex align-items-center">
-                    <?php if (!isset($_SESSION['user_id'])): ?>
-                        <button type="button" class="btn btn-outline-light me-2" onclick="showLoginPrompt()">
-                            <i class="bi bi-arrow-left-right"></i> 系所比較
-                        </button>
-                    <?php else: ?>
-                        <?php if ($compare_count >= 2): ?>
-                            <a href="compare.php?names=<?php echo urlencode(implode(',', $selected_departments)); ?>"
-                                class="btn btn-outline-light me-2">
-                                <i class="bi bi-arrow-left-right"></i> 系所比較
-                            </a>
-                        <?php else: ?>
-                            <button type="button" class="btn btn-outline-light me-2" data-bs-toggle="modal"
-                                data-bs-target="#noCompareModal">
-                                <i class="bi bi-arrow-left-right"></i> 系所比較
-                            </button>
-                        <?php endif; ?>
-                    <?php endif; ?>
-
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                        <div class="dropdown">
-                            <button class="btn btn-outline-light dropdown-toggle" type="button" id="accountDropdown"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                                帳號管理
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
-                                <li><a class="dropdown-item" href="account_settings.php">修改資料</a></li>
-                                <li><a class="dropdown-item" href="logout.php">登出</a></li>
-                            </ul>
-                        </div>
-                    <?php else: ?>
-                        <a href="login.php" class="btn btn-outline-light me-2">登入</a>
-                        <a href="register.php" class="btn btn-outline-light">註冊</a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </nav>
-        <!-- 主內容：左側邊欄 + 中間內容 -->
-        <div class="row">
-            <!-- 左側邊欄 -->
-            <aside class="col-md-2 bg-light border-end vh-100 pt-4">
+<div class="container-fluid">
+    <!-- 主內容：左側邊欄 + 中間內容 -->
+    <div class="row">
+        <!-- 左側邊欄 -->
+        <aside class="col-md-2 bg-light border-end vh-100 pt-5 mt-4">
+            <div class="mt-2">
                 <h5 class="px-3">🔖 快捷功能</h5>
                 <ul class="nav flex-column px-3">
+                    <li class="nav-item mb-2">
+                        <a href="discussion.php" class="nav-link btn btn-warning text-dark fw-bold mb-2">
+                            <i class="bi bi-chat-dots"></i> 討論區
+                        </a>
+                    </li>
                     <li class="nav-item mb-2"><a href="#" class="nav-link text-dark">▸ 最近瀏覽（3-4 筆）</a></li>
                     <li class="nav-item mb-2"><a href="#" class="nav-link text-dark">▸ 設定提醒</a></li>
-                    <li class="nav-item mb-2"><a href="#" class="nav-link text-dark">▸ 轉系 Q&A</a></li>
+                    <li class="nav-item mb-2"><a href="transfer_qa.php" class="nav-link text-dark">▸ 轉系 Q&A</a></li>
                 </ul>
-            </aside>
+            </div>
+        </aside>
 
-            <!-- 中間主內容 -->
-            <main class="col-md-10 pt-4 px-5">
-
-                <!-- 搜尋列 -->
-                <div class="search-box mb-4 mt-5" style="margin-top: 4rem !important;">
-                    <form method="GET" class="mb-0">
-                        <div class="input-group input-group-lg">
-                            <input type="text" name="search" class="form-control" placeholder="搜尋系所..."
-                                value="<?php echo htmlspecialchars($search); ?>">
-                            <button type="submit" class="btn-search">
-                                <i class="bi bi-search"></i> 搜尋
+        <!-- 中間主內容 -->
+        <main class="col-md-10 pt-3 px-5">
+            <!-- 主要內容 -->
+            <div class="container mt-4 pt-5">
+                <!-- 搜尋框 -->
+                <div class="search-box mb-4">
+                    <form method="GET" class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center flex-grow-1 me-3">
+                            <input type="text" name="search" class="form-control form-control-lg" placeholder="搜尋系所..." value="<?= htmlspecialchars($search) ?>">
+                            <button type="submit" class="btn btn-search btn-lg ms-2 px-4">
+                                <span>搜尋</span>
                             </button>
                         </div>
                     </form>
                 </div>
 
-                <!-- ✅ 學院按鈕列 -->
-                <div class="d-flex flex-wrap justify-content-center mb-4">
-                    <button class="btn-Faculty me-2 mb-2" data-college="文學院">文學院</button>
-                    <button class="btn-Faculty me-2 mb-2" data-college="藝術學院">藝術學院</button>
-                    <button class="btn-Faculty me-2 mb-2" data-college="傳播學院">傳播學院</button>
-                    <button class="btn-Faculty me-2 mb-2" data-college="教育與運動學院">教育與運動學院</button>
-                    <button class="btn-Faculty me-2 mb-2" data-college="醫學院">醫學院</button>
-                    <button class="btn-Faculty me-2 mb-2" data-college="理工學院">理工學院</button>
-                    <button class="btn-Faculty me-2 mb-2" data-college="外國語文學院">外國語文學院</button>
-                    <button class="btn-Faculty me-2 mb-2" data-college="民生學院">民生學院</button>
-                    <button class="btn-Faculty me-2 mb-2" data-college="法律學院">法律學院</button>
-                    <button class="btn-Faculty me-2 mb-2" data-college="社會科學院">社會科學院</button>
-                    <button class="btn-Faculty me-2 mb-2" data-college="管理學院">管理學院</button>
+                <!-- 學院篩選 -->
+                <div class="college-filter-wrapper text-center mb-4">
+                    <?php
+                    $colleges = [
+                        '文學院',
+                        '藝術學院',
+                        '傳播學院',
+                        '教育與運動學院',
+                        '醫學院',
+                        '理工學院',
+                        '外國語文學院',
+                        '民生學院',
+                        '法律學院',
+                        '社會科學院',
+                        '管理學院'
+                    ];
+                    foreach ($colleges as $college):
+                    ?>
+                        <button class="btn btn-Faculty college-filter" data-college="<?php echo htmlspecialchars($college); ?>">
+                            <?php echo htmlspecialchars($college); ?>
+                        </button>
+                    <?php endforeach; ?>
                 </div>
 
                 <div id="departmentTableSection">
-                    <div id="default-table">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th width="25%">系所名稱</th>
+                                    <th width="50%">系所簡介</th>
+                                    <th width="25%" class="ps-5">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="department-table-body">
+                                <?php if (empty($departments)): ?>
                                     <tr>
-                                        <th>系所編號</th>
-                                        <th>系所名稱</th>
-                                        <th>考試類型</th>
-                                        <th>備註</th>
-                                        <th>操作</th>
+                                        <td colspan="3" class="text-center py-4">
+                                            <i class="bi bi-info-circle text-muted"></i> 沒有找到符合的系所
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($departments)): ?>
-                                        <tr>
-                                            <td colspan="3" class="text-center py-4">
-                                                <i class="bi bi-info-circle text-muted"></i> 沒有找到符合的系所
-                                            </td>
-                                        </tr>
-                                    <?php else: ?>
-                                        <?php foreach ($departments as $dept): ?>
-                                            <tr>
-                                                <td><?php echo htmlspecialchars($dept['department_id']); ?></td>
-                                                <td>
-                                                    <a href="department_detail.php?id=<?php echo $dept['department_id']; ?>" class="department-link">
-                                                        <?php echo htmlspecialchars($dept['department_name']); ?>
-                                                    </a>
-                                                </td>
-                                                <td><?php echo htmlspecialchars($dept['exam_types'] ?? '無'); ?></td>
-                                                <td>
-                                                    <?php 
-                                                    $remarks = explode(',', $dept['remarks'] ?? '');
-                                                    if (!empty($remarks[0])) {
-                                                        echo htmlspecialchars($remarks[0]);
-                                                    } else {
-                                                        echo '無';
-                                                    }
-                                                    ?>
-                                                </td>
-                                                <td>
-                                                    <div class="btn-group">
-                                                        <a href="department_detail.php?id=<?php echo $dept['department_id']; ?>" class="btn btn-more">詳細資訊</a>
-                                                        <button type="button" class="btn btn-more dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            <span class="visually-hidden">Toggle Dropdown</span>
-                                                        </button>
-                                                        <ul class="dropdown-menu">
-                                                            <li><a class="dropdown-item" href="department_detail.php?id=<?php echo $dept['department_id']; ?>">查看詳情</a></li>
-                                                            <li><a class="dropdown-item" href="compare.php?id=<?php echo $dept['department_id']; ?>">比較</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                        <nav aria-label="Page navigation">
-                            <ul class="pagination justify-content-center mt-4">
-                                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                                    <li class="page-item <?= ($i === $page) ? 'active' : '' ?>">
-                                        <a class="page-link"
-                                            href="?page=<?= $i ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>"><?= $i ?></a>
-                                    </li>
-                                <?php endfor; ?>
-                            </ul>
-                        </nav>
+                                <?php else: ?>
+                                    <?php foreach ($departments as $dept): ?>
+                                    <tr>
+                                        <td class="text-dark ps-5">
+                                            <?= htmlspecialchars($dept['department_name']) ?>
+                                        </td>
+                                        <td>
+                                            <p class="mb-0 text-muted">
+                                                <?php 
+                                                $intro = isset($dept['department_intro']) ? $dept['department_intro'] : '暫無簡介';
+                                                echo nl2br(htmlspecialchars(mb_strimwidth($intro, 0, 150, '...'))); 
+                                                ?>
+                                            </p>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-2 justify-content-start ps-5">
+                                                <a href="department_detail.php?name=<?= urlencode($dept['department_name']) ?>" class="btn-more w-40 text-center py-2">
+                                                    點我詳情
+                                                </a>
+                                                <button class="btn-add w-40 text-center py-2 toggle-compare-btn" 
+                                                        data-dept="<?= htmlspecialchars($dept['department_name']) ?>"
+                                                        data-action="add">
+                                                    加入比較
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
                     </div>
-                    <di id="department-content" style="display: none;">
+                    <nav aria-label="Page navigation" id="pagination-wrapper">
+                        <ul class="pagination justify-content-center mt-4">
+                            <?php if ($page > 1): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<?= $page - 1 ?><?= $search ? '&search=' . urlencode($search) : '' ?>">上一頁</a>
+                                </li>
+                            <?php endif; ?>
+                            
+                            <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                                <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                                    <a class="page-link" href="?page=<?= $i ?><?= $search ? '&search=' . urlencode($search) : '' ?>"><?= $i ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            
+                            <?php if ($page < $total_pages): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<?= $page + 1 ?><?= $search ? '&search=' . urlencode($search) : '' ?>">下一頁</a>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </nav>
                 </div>
-            </main>
-        </div>
+            </div>
+        </main>
     </div>
+</div>
 
-    <!-- 沒有比較系所的提示 Modal -->
-    <div class="modal fade" id="noCompareModal" tabindex="-1" aria-labelledby="noCompareModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="noCompareModalLabel">提示</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <i class="bi bi-info-circle-fill  mb-3" style="font-size: 2rem;color:rgb(172, 192, 221)"></i>
-                    <p class="mb-3">還沒有比較的系所喔，去主頁探索吧！</p>
-                    <a href="index.php" class="btn" style="background-color:rgb(172, 192, 221);">
-                        <i class="bi bi-house-door"></i> 返回主頁
-                    </a>
-                </div>
+<!-- 加入比較登入提示 Modal -->
+<div class="modal fade" id="loginModalAddCompare" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="loginModalLabel">尚未登入</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+            </div>
+            <div class="modal-body">
+                您必須先登入才能使用「加入比較」功能。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <a href="login.php" class="btn" style="background-color:rgb(172, 192, 221);">前往登入</a>
             </div>
         </div>
     </div>
+</div>
 
-
-    <!-- 登入提示 Modal -->
-    <div class="modal fade" id="loginModalAddCompare" tabindex="-1" aria-labelledby="loginModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="loginModalLabel">尚未登入</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
-                </div>
-                <div class="modal-body">
-                    您必須先登入才能使用「加入比較」功能。
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <a href="login.php" class="btn" style="background-color:rgb(172, 192, 221);">前往登入</a>
-                </div>
+<!-- 系所比較登入提示 Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="loginModalLabel">尚未登入</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+            </div>
+            <div class="modal-body">
+                您必須先登入才能使用「系所比較」功能。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <a href="login.php" class="btn" style="background-color:rgb(172, 192, 221);">前往登入</a>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="loginModalLabel">尚未登入</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
-                </div>
-                <div class="modal-body">
-                    您必須先登入才能使用「系所比較」功能。
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <a href="login.php" class="btn" style="background-color:rgb(172, 192, 221);">前往登入</a>
-                </div>
-            </div>
-        </div>
-    </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // 初始化所有按鈕的狀態
+        function initializeCompareButtons() {
+            const compareList = JSON.parse(localStorage.getItem('compare_departments') || '[]');
+            document.querySelectorAll('.toggle-compare-btn').forEach(btn => {
+                const deptName = btn.dataset.dept;
+                if (compareList.includes(deptName)) {
+                    btn.classList.remove("btn-add");
+                    btn.classList.add("btn-remove");
+                    btn.innerHTML = '移出比較';
+                    btn.dataset.action = "remove";
+                } else {
+                    btn.classList.remove("btn-remove");
+                    btn.classList.add("btn-add");
+                    btn.innerHTML = '加入比較';
+                    btn.dataset.action = "add";
+                }
+            });
 
-    <script>
-        function showLoginPrompt() {
-            var loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-            loginModal.show();
+            // 更新計數器
+            const countElements = document.querySelectorAll('#compare-count');
+            countElements.forEach(element => {
+                element.textContent = compareList.length;
+            });
         }
-    </script>
-    <script>
-        function showLoginPrompt() {
-            var loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-            loginModal.show();
-        }
-    </script>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const searchInput = document.querySelector("input[name='search']");
-
+        // ✅ 搜尋清空 → 回首頁
+        const searchInput = document.querySelector("input[name='search']");
+        if (searchInput) {
             searchInput.addEventListener("input", function () {
                 if (searchInput.value.trim() === "") {
                     setTimeout(() => {
@@ -506,19 +274,138 @@ $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     }, 500);
                 }
             });
+        }
+
+        // ✅ 學院篩選（點同一顆再點 → 還原全部）＋ 隱藏分頁
+        let currentCollege = null;
+        document.querySelectorAll('.college-filter').forEach(button => {
+            button.addEventListener('click', () => {
+                const selectedCollege = button.getAttribute('data-college');
+
+                // 移除所有按鈕的 active 類別
+                document.querySelectorAll('.college-filter').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // 如果點擊的是當前選中的學院，則返回全部系所
+                if (currentCollege === selectedCollege) {
+                    window.location.href = 'index.php';
+                    currentCollege = null;
+                } else {
+                    // 添加 active 類別到選中的按鈕
+                    button.classList.add('active');
+                    fetch('load_departments.php?college=' + encodeURIComponent(selectedCollege))
+                        .then(response => response.text())
+                        .then(html => {
+                            document.getElementById('department-table-body').innerHTML = html;
+                            document.getElementById('pagination-wrapper').style.display = 'none';
+                            currentCollege = selectedCollege;
+                            // 重新初始化按鈕狀態
+                            initializeCompareButtons();
+                        });
+                }
+            });
         });
-    </script>
 
+        // ✅ 即時加入／移除比較按鈕（不刷新頁面）
+        document.addEventListener("click", function (e) {
+            const btn = e.target.closest(".toggle-compare-btn");
+            if (!btn) return;
 
+            <?php if (!isset($_SESSION['user_id'])): ?>
+                // 如果未登入，顯示登入提示 Modal
+                var loginModalAddCompare = new bootstrap.Modal(document.getElementById('loginModalAddCompare'));
+                loginModalAddCompare.show();
+                return;
+            <?php else: ?>
+                e.preventDefault();
+                const deptName = btn.dataset.dept;
+                const action = btn.dataset.action;
 
+                // 檢查是否達到最大比較數量
+                if (action === "add") {
+                    const compareList = JSON.parse(localStorage.getItem('compare_departments') || '[]');
+                    if (compareList.length >= 3) {
+                        showAlert('最多只能同時比較3個系所，請先移除其中一個系所後再進行添加');
+                        return;
+                    }
+                }
 
-    <footer class="bg-light py-3 mt-5">
-        <div class="container text-center text-muted">
-            <small>&copy; <?php echo date('Y'); ?> 輔仁大學轉系系統</small>
-        </div>
-    </footer>
+                // 更新 localStorage
+                let compareList = JSON.parse(localStorage.getItem('compare_departments') || '[]');
+                
+                if (action === "add") {
+                    btn.classList.remove("btn-add");
+                    btn.classList.add("btn-remove");
+                    btn.innerHTML = '移出比較';
+                    btn.dataset.action = "remove";
+                    // 添加到比較列表
+                    if (!compareList.includes(deptName)) {
+                        compareList.push(deptName);
+                    }
+                } else {
+                    btn.classList.remove("btn-remove");
+                    btn.classList.add("btn-add");
+                    btn.innerHTML = '加入比較';
+                    btn.dataset.action = "add";
+                    // 從比較列表中移除
+                    compareList = compareList.filter(dept => dept !== deptName);
+                }
+                
+                // 更新 localStorage
+                localStorage.setItem('compare_departments', JSON.stringify(compareList));
+                
+                // 更新所有按鈕的狀態
+                initializeCompareButtons();
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+                // 更新後端
+                fetch("compare_toggle.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ department_name: deptName, action: action })
+                });
+            <?php endif; ?>
+        });
 
-</html>
+        // 初始化頁面時的按鈕狀態
+        initializeCompareButtons();
+    });
+</script>
+
+<style>
+.btn-search {
+    min-width: 120px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+.btn-primary {
+    background-color: #0d6efd;
+    border: none;
+}
+.btn-success {
+    background-color: #198754;
+    border: none;
+}
+.btn-primary:hover {
+    background-color: #0b5ed7;
+}
+.btn-success:hover {
+    background-color: #157347;
+}
+.btn-more, .btn-add {
+    letter-spacing: 0.5em;
+    text-indent: 0.5em;
+    white-space: nowrap;
+    width: 120px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.w-40 {
+    width: 40% !important;
+}
+</style>
+
+<?php include 'footer.php'; ?>

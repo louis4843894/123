@@ -1,0 +1,1 @@
+ALTER TABLE DepartmentTransfer ADD COLUMN department_intro TEXT DEFAULT '暫無簡介' AFTER department_name; 

@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $domain = 'sandbox41e78a6cf3654933bf7b803506273890.mailgun.org';
         $mg = Mailgun::create($apiKey);
 
-        $resetLink = "http://localhost/SA/reset_password.php?token=" . urlencode($token);
+        $resetLink = "http://localhost/123/reset_password.php?token=" . urlencode($token);
 
         $mg->messages()->send($domain, [
             'from'    => '轉系系統 <postmaster@' . $domain . '>',

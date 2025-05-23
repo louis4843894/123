@@ -1,9 +1,8 @@
 {
     "require": {
-        "mailgun/mailgun-php": "^3.5",
+        "mailgun/mailgun-php": "^4.3",
         "nyholm/psr7": "^1.8",
-        "php-http/guzzle7-adapter": "^1.1",
-        "php": ">=7.4.0"
+        "php-http/guzzle7-adapter": "^1.1"
     },
     "config": {
         "allow-plugins": {
