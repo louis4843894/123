@@ -1,9 +1,18 @@
 <?php
 session_start();
 require_once 'config.php';
+require_once 'functions.php';
 
 // 設置字符集
 header('Content-Type: text/html; charset=utf-8');
+
+// 獲取系所名稱
+$department_name = isset($_GET['name']) ? $_GET['name'] : '';
+
+// 記錄瀏覽歷史
+if (!empty($department_name)) {
+    recordPageView('department', $department_name, $department_name);
+}
 
 // 檢查是否有系所名稱
 if (!isset($_GET['name'])) {
@@ -120,7 +129,7 @@ include 'header.php';
         color: #495057;
         margin-right: 10px;
     }
-
+    
     .btn-back {
         background-color: #6c757d;
         color: white;
@@ -152,7 +161,7 @@ include 'header.php';
     .btn-add:hover {
         background-color: #5a6268;
         color: white;
-    }
+}
 
     .btn-remove {
         background-color: #dc3545;
@@ -261,46 +270,46 @@ include 'header.php';
         <h2 class="mb-0"><?php echo htmlspecialchars($department['department_name']); ?></h2>
     </div>
 
-    <div class="card">
-        <div class="card-header">
+                <div class="card">
+                    <div class="card-header">
             <h5 class="mb-0">系所資訊</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="info-item">
-                        <span class="info-label">二年級名額：</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <span class="info-label">二年級名額：</span>
                         <?php echo $department['year_2_enrollment'] ? htmlspecialchars($department['year_2_enrollment']) : '無'; ?>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">三年級名額：</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">三年級名額：</span>
                         <?php echo $department['year_3_enrollment'] ? htmlspecialchars($department['year_3_enrollment']) : '無'; ?>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">四年級名額：</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">四年級名額：</span>
                         <?php echo $department['year_4_enrollment'] ? htmlspecialchars($department['year_4_enrollment']) : '無'; ?>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="info-item">
-                        <span class="info-label">考試科目：</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <span class="info-label">考試科目：</span>
                         <?php echo $department['exam_subjects'] ? htmlspecialchars($department['exam_subjects']) : '無'; ?>
-                    </div>
-                    <div class="info-item">
+                                </div>
+                                <div class="info-item">
                         <span class="info-label">資料審查比例：</span>
                         <?php echo $department['data_review_ratio'] ? htmlspecialchars($department['data_review_ratio']) : '無'; ?>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- 系所簡介卡片 -->
-    <div class="card">
-        <div class="card-header">
-            <h4 class="mb-0">系所簡介</h4>
-        </div>
-        <div class="card-body">
+                <!-- 系所簡介卡片 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">系所簡介</h4>
+                    </div>
+                    <div class="card-body">
             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
             <button type="button" class="edit-btn" onclick="toggleEditMode()">
                 <i class="bi bi-pencil"></i> 編輯內容
@@ -341,14 +350,14 @@ include 'header.php';
                         }
                         ?>
                     </div>
-                </div>
+                            </div>
 
                 <div class="mb-4">
                     <h4>未來發展</h4>
                     <div class="view-mode">
-                        <?php 
+                                    <?php 
                         if (isset($department_info['careers'])) {
-                            $careers = json_decode($department_info['careers'], true);
+                                    $careers = json_decode($department_info['careers'], true);
                             if (is_array($careers)) {
                                 echo "<ul>";
                                 foreach ($careers as $career) {
@@ -359,7 +368,7 @@ include 'header.php';
                         }
                         ?>
                     </div>
-                </div>
+                            </div>
 
                 <?php if (isset($department_info['url']) && !empty($department_info['url'])): ?>
                 <div class="mb-4">
@@ -367,25 +376,25 @@ include 'header.php';
                     <div class="view-mode">
                         <a href="<?= htmlspecialchars($department_info['url']) ?>" target="_blank" class="btn btn-primary">
                             前往系所網站
-                        </a>
+                                    </a>
                     </div>
                 </div>
                 <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- 比較按鈕 -->
+    <!-- 比較按鈕 -->
 <div class="compare-button-fixed">
     <button onclick="toggleCompare('<?php echo htmlspecialchars($department['department_name']); ?>')" 
             class="btn btn-compare btn-lg" 
             id="compareBtn">
-        <i class="bi bi-plus-circle"></i> 加入比較
-    </button>
-</div>
+                    <i class="bi bi-plus-circle"></i> 加入比較
+                </button>
+    </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // 更新比較按鈕狀態
     function updateCompareButton(departmentName) {
@@ -442,5 +451,5 @@ include 'header.php';
         }
     }
 </script>
-
-<?php include 'footer.php'; ?>
+    
+    <?php include 'footer.php'; ?>

@@ -14,90 +14,105 @@ include 'header.php';
 // 獲取要比較的系所
 $departments = [];
 if (isset($_GET['departments'])) {
-    $dept_names = explode(',', $_GET['departments']);
-    if (empty($dept_names) || $dept_names[0] === '') {
-        header('Location: index.php');
+    $dept_names = array_filter(explode(',', $_GET['departments']));
+    
+    if (count($dept_names) < 2) {
+        echo '<div class="alert alert-warning mt-5">請至少選擇兩個系所進行比較</div>';
+        echo '<div class="text-center mt-3"><a href="index.php" class="btn btn-primary">返回首頁</a></div>';
+        include 'footer.php';
         exit;
     }
     
-    $placeholders = str_repeat('?,', count($dept_names) - 1) . '?';
-    
-    // 使用正確的欄位名稱
-    $stmt = $pdo->prepare("
-        SELECT 
-            dt.department_name,
-            drs.remark1,
-            drs.remark2,
-            drs.remark3,
-            dt.year_2_enrollment,
-            dt.year_3_enrollment,
-            dt.year_4_enrollment,
-            dt.exam_subjects,
-            dt.data_review_ratio,
-            d.url
-        FROM departmenttransfer dt
-        LEFT JOIN departmentremarkssplit drs ON dt.department_name = drs.department_name
-        LEFT JOIN departments d ON dt.department_name = d.name
-        WHERE dt.department_name IN ($placeholders)
-    ");
-    
-    $stmt->execute($dept_names);
-    $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // 如果沒有找到任何系所，跳回首頁
-    if (empty($departments)) {
-        header('Location: index.php');
+    try {
+        // 先檢查系所是否存在
+        $placeholders = str_repeat('?,', count($dept_names) - 1) . '?';
+        $check_sql = "SELECT department_name FROM DepartmentTransfer WHERE department_name IN ($placeholders)";
+        $check_stmt = $pdo->prepare($check_sql);
+        $check_stmt->execute($dept_names);
+        $existing_depts = $check_stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        if (count($existing_depts) < count($dept_names)) {
+            $missing = array_diff($dept_names, $existing_depts);
+            echo '<div class="alert alert-warning mt-5">以下系所不存在：' . implode(', ', $missing) . '</div>';
+            echo '<div class="text-center mt-3"><a href="index.php" class="btn btn-primary">返回首頁</a></div>';
+            include 'footer.php';
+            exit;
+        }
+        
+        // 獲取系所資料
+        $sql = "
+            SELECT 
+                dt.department_name,
+                dt.year_2_enrollment,
+                dt.year_3_enrollment,
+                dt.year_4_enrollment,
+                dt.exam_subjects,
+                dt.data_review_ratio,
+                d.url,
+                d.intro,
+                d.careers
+            FROM DepartmentTransfer dt
+            LEFT JOIN departments d ON CAST(dt.department_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = CAST(d.name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci
+            WHERE CAST(dt.department_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci IN ($placeholders)
+        ";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($dept_names);
+        $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        error_log("Database error in compare.php: " . $e->getMessage());
+        echo '<div class="alert alert-danger mt-5">';
+        echo '<h4 class="alert-heading">系統發生錯誤</h4>';
+        echo '<p>很抱歉，系統在處理您的請求時發生錯誤。請稍後再試。</p>';
+        if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+            echo '<hr>';
+            echo '<p class="mb-0">錯誤詳情：' . htmlspecialchars($e->getMessage()) . '</p>';
+        }
+        echo '</div>';
+        echo '<div class="text-center mt-3"><a href="index.php" class="btn btn-primary">返回首頁</a></div>';
+        include 'footer.php';
         exit;
     }
 } else {
-    // 如果沒有 departments 參數，跳回首頁
     header('Location: index.php');
     exit;
 }
 ?>
 
 <div class="container mt-5 pt-5">
-    <h2 class="mb-4">系所比較</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>系所比較</h2>
+        <a href="index.php" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left"></i> 返回首頁
+        </a>
+    </div>
     
-    <div class="table-responsive">
-        <?php if (count($departments) >= 2): ?>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>比較項目</th>
-                    <?php foreach ($departments as $dept): ?>
+                <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                            <tr>
+                    <th style="width: 200px;">比較項目</th>
+                                <?php foreach ($departments as $dept): ?>
                         <th class="text-center">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="text-dark"><?= htmlspecialchars($dept['department_name']) ?></span>
-                                <button class="btn btn-sm btn-danger remove-dept ms-2" 
-                                        data-dept="<?= htmlspecialchars($dept['department_name']) ?>">
-                                    <i class="bi bi-x"></i>
-                                </button>
+                                <button class="btn btn-sm btn-outline-danger remove-dept ms-2" 
+                                        data-dept="<?= htmlspecialchars($dept['department_name']) ?>"
+                                        title="移除系所">
+                                                <i class="bi bi-x"></i>
+                                            </button>
                             </div>
-                        </th>
-                    <?php endforeach; ?>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- 轉系標準 -->
+                                    </th>
+                                <?php endforeach; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                <!-- 系所簡介 -->
                 <tr>
-                    <td class="bg-light">轉系標準</td>
+                    <td class="bg-light">系所簡介</td>
                     <?php foreach ($departments as $dept): ?>
-                        <td>
-                            <?php if (!empty($dept['remark1']) || !empty($dept['remark2']) || !empty($dept['remark3'])): ?>
-                                <?php if (!empty($dept['remark1'])): ?>
-                                    <p><?= nl2br(htmlspecialchars($dept['remark1'])) ?></p>
-                                <?php endif; ?>
-                                <?php if (!empty($dept['remark2'])): ?>
-                                    <p><?= nl2br(htmlspecialchars($dept['remark2'])) ?></p>
-                                <?php endif; ?>
-                                <?php if (!empty($dept['remark3'])): ?>
-                                    <p><?= nl2br(htmlspecialchars($dept['remark3'])) ?></p>
-                                <?php endif; ?>
-                            <?php else: ?>
-                                暫無資料
-                            <?php endif; ?>
-                        </td>
+                        <td><?= nl2br(htmlspecialchars($dept['intro'] ?? '暫無資料')) ?></td>
                     <?php endforeach; ?>
                 </tr>
                 
@@ -106,9 +121,18 @@ if (isset($_GET['departments'])) {
                     <td class="bg-light">年級名額</td>
                     <?php foreach ($departments as $dept): ?>
                         <td>
-                            <p><strong>二年級：</strong><?= htmlspecialchars($dept['year_2_enrollment'] ?? '暫無資料') ?></p>
-                            <p><strong>三年級：</strong><?= htmlspecialchars($dept['year_3_enrollment'] ?? '暫無資料') ?></p>
-                            <p><strong>四年級：</strong><?= htmlspecialchars($dept['year_4_enrollment'] ?? '暫無資料') ?></p>
+                            <div class="mb-2">
+                                <strong>二年級：</strong>
+                                <span class="badge bg-primary"><?= htmlspecialchars($dept['year_2_enrollment'] ?? '暫無資料') ?></span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>三年級：</strong>
+                                <span class="badge bg-primary"><?= htmlspecialchars($dept['year_3_enrollment'] ?? '暫無資料') ?></span>
+                            </div>
+                            <div>
+                                <strong>四年級：</strong>
+                                <span class="badge bg-primary"><?= htmlspecialchars($dept['year_4_enrollment'] ?? '暫無資料') ?></span>
+                            </div>
                         </td>
                     <?php endforeach; ?>
                 </tr>
@@ -129,24 +153,48 @@ if (isset($_GET['departments'])) {
                     <?php endforeach; ?>
                 </tr>
 
+                <!-- 未來發展 -->
+                <tr>
+                    <td class="bg-light">未來發展</td>
+                    <?php foreach ($departments as $dept): ?>
+                        <td>
+                            <?php
+                            if (!empty($dept['careers'])) {
+                                $careers = json_decode($dept['careers'], true);
+                                if (is_array($careers)) {
+                                    echo '<ul class="list-unstyled mb-0">';
+                                    foreach ($careers as $career) {
+                                        echo '<li><i class="bi bi-check2-circle text-success"></i> ' . htmlspecialchars($career) . '</li>';
+                                    }
+                                    echo '</ul>';
+                                } else {
+                                    echo '暫無資料';
+                                }
+                            } else {
+                                echo '暫無資料';
+                            }
+                            ?>
+                                    </td>
+                                <?php endforeach; ?>
+                            </tr>
+
                 <!-- 系所網站 -->
                 <tr>
                     <td class="bg-light">系所網站</td>
                     <?php foreach ($departments as $dept): ?>
                         <td>
                             <?php if (!empty($dept['url'])): ?>
-                                <a href="<?= htmlspecialchars($dept['url']) ?>" target="_blank" class="btn btn-info">
-                                    <i class="bi bi-link"></i> 前往系所網站
-                                </a>
-                            <?php else: ?>
-                                暫無資料
-                            <?php endif; ?>
-                        </td>
-                    <?php endforeach; ?>
-                </tr>
-            </tbody>
-        </table>
-        <?php endif; ?>
+                                <a href="<?= htmlspecialchars($dept['url']) ?>" target="_blank" class="btn btn-outline-primary">
+                                    <i class="bi bi-link-45deg"></i> 前往系所網站
+                                            </a>
+                                        <?php else: ?>
+                                <span class="text-muted">暫無資料</span>
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endforeach; ?>
+                            </tr>
+                        </tbody>
+                    </table>
     </div>
 </div>
 
@@ -160,7 +208,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (compareList.length >= 2) {
             window.location.href = 'compare.php?departments=' + compareList.join(',');
         } else {
-            // 如果選擇的系所少於2個，顯示提示並返回首頁
             alert('請至少選擇兩個系所進行比較！');
             window.location.href = 'index.php';
         }

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'config.php';
+require_once 'functions.php';
 header('Content-Type: text/html; charset=utf-8');
 
 // 顯示錯誤訊息
@@ -21,6 +22,20 @@ if (!isset($_SESSION['csrf_token'])) {
 
 // 獲取文章 ID
 $post_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+// 記錄瀏覽歷史
+if ($post_id > 0) {
+    try {
+        $stmt = $pdo->prepare("SELECT title FROM discussion_posts WHERE id = ?");
+        $stmt->execute([$post_id]);
+        $post = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($post) {
+            recordPageView('discussion', $post_id, $post['title']);
+        }
+    } catch(PDOException $e) {
+        error_log("Error getting post title: " . $e->getMessage());
+    }
+}
 
 try {
     // 獲取文章詳情
