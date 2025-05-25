@@ -63,8 +63,7 @@ function recordPageView($page_type, $page_id, $page_title) {
         $stmt->execute(['user_id' => $_SESSION['user_id']]);
         
     } catch(PDOException $e) {
-        // 記錄錯誤但不中斷程序
-        error_log("Error recording page view: " . $e->getMessage());
+        return;
     }
 }
 
@@ -91,7 +90,6 @@ function getRecentViewedDepartments($limit = 5) {
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        error_log("Error in getRecentViewedDepartments: " . $e->getMessage());
         return [];
     }
 }
@@ -106,37 +104,20 @@ function recordDepartmentView($deptName) {
     try {
         // 插入新記錄
         $stmt = $pdo->prepare("
-            INSERT INTO browse_history (user_id, page_type, page_id, page_title) 
-            VALUES (:user_id, 'department', :page_id, :page_title)
+            INSERT INTO browsing_history (user_id, page_type, page_id, page_name, viewed_at)
+            VALUES (?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE viewed_at = NOW()
         ");
         
         $stmt->execute([
-            ':user_id' => $_SESSION['user_id'],
-            ':page_id' => $deptName,
-            ':page_title' => $deptName
+            $_SESSION['user_id'],
+            'department',
+            $deptName,
+            $deptName
         ]);
 
-        // 只保留最新的5條記錄
-        $stmt = $pdo->prepare("
-            DELETE FROM browse_history 
-            WHERE user_id = :user_id 
-            AND id NOT IN (
-                SELECT id FROM (
-                    SELECT id 
-                    FROM browse_history 
-                    WHERE user_id = :user_id 
-                    AND page_type = 'department'
-                    ORDER BY viewed_at DESC 
-                    LIMIT 5
-                ) tmp
-            )
-        ");
-        
-        $stmt->execute([':user_id' => $_SESSION['user_id']]);
-        
         return true;
     } catch (PDOException $e) {
-        error_log("Error in recordDepartmentView: " . $e->getMessage());
         return false;
     }
 }

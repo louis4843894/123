@@ -1,16 +1,7 @@
 <?php
 session_start();
 require_once 'config.php';
-
-// 開啟錯誤日誌
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/php_errors.log');
-
-// 記錄請求信息
-error_log("Request received: " . print_r($_SERVER, true));
-error_log("Session info: " . print_r($_SESSION, true));
+require_once 'functions.php';
 
 // 檢查是否為 POST 請求
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -43,8 +34,6 @@ try {
     // 返回成功
     echo 'success';
 } catch (PDOException $e) {
-    error_log("Error in record_view.php: " . $e->getMessage());
-    error_log("Stack trace: " . $e->getTraceAsString());
     http_response_code(500);
     echo json_encode(['error' => 'Database error']);
 } 

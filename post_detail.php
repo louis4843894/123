@@ -249,7 +249,7 @@ function renderReplies($replies, $user_role, $session_user_id, $level = 0) {
                     <div class="text-muted small"><?= htmlspecialchars($reply['author_student_id']) ?></div>
                 </div>
                 <div class="ms-auto text-muted small">
-                    <?= date('Y-m-d H:i', strtotime($reply['created_at'])) ?>
+                    <?= date('Y-m-d H:i:s', strtotime($reply['created_at'])) ?>
                 </div>
             </div>
             <div class="ms-5"><?= nl2br(htmlspecialchars($reply['content'])) ?></div>
@@ -338,7 +338,7 @@ include 'header.php';
                     </div>
                 </div>
                 <div class="text-muted small">
-                    發表於 <?= date('Y-m-d H:i', strtotime($post['created_at'])) ?>
+                    發表於 <?= date('Y-m-d H:i:s', strtotime($post['created_at'])) ?>
                 </div>
             </div>
 

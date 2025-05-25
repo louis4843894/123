@@ -76,7 +76,7 @@ $pageTitle = '發佈新文章';
 include 'header.php';
 ?>
 
-<div class="container mt-5">
+<div class="container mt-2 pt-2">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">

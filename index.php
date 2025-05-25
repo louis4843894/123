@@ -56,35 +56,39 @@ include 'header.php';
         <!-- 主內容：左側邊欄 + 中間內容 -->
         <div class="row">
             <!-- 左側邊欄 -->
-        <aside class="col-md-2 bg-light border-end vh-100 pt-5 mt-4">
-            <div class="mt-2">
+        <aside class="col-md-2 bg-light border-end vh-100 pt-1 mt-1">
+            <div class="mt-0">
                 <h5 class="px-3">其他功能</h5>
                 <ul class="nav flex-column px-3">
                     <li class="nav-item mb-2">
-                        <a href="discussion.php" class="nav-link btn btn-warning text-dark fw-bold mb-2">
+                        <a href="discussion.php" class="nav-link btn btn-secondary text-white fw-bold mb-2">
                             <i class="bi bi-chat-dots"></i> 討論區
                         </a>
                     </li>
                     <li class="nav-item mb-2">
-                        <a href="time.php" class="nav-link btn btn-info text-dark fw-bold mb-2">
+                        <a href="time.php" class="nav-link btn btn-secondary text-white fw-bold mb-2">
                             <i class="bi bi-calendar-event"></i> 時程表
                         </a>
                     </li>
-                    <li class="nav-item mb-2"><a href="#" class="nav-link text-dark">▸ 設定提醒</a></li>
-                    <li class="nav-item mb-2"><a href="transfer_qa.php" class="nav-link text-dark">▸ 轉系 Q&A</a></li>
+                    <li class="nav-item mb-2">
+                        <a href="#" class="nav-link btn btn-secondary text-white fw-bold mb-2">
+                            <i class="bi bi-bell"></i> 設定提醒
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a href="transfer_qa.php" class="nav-link btn btn-secondary text-white fw-bold mb-2">
+                            <i class="bi bi-question-circle"></i> 轉系 Q&A
+                        </a>
+                    </li>
                 </ul>
 
                 <?php if (isset($_SESSION['user_id'])): ?>
                 <div class="mt-4">
                     <h6 class="px-3 mb-3"><i class="bi bi-clock-history"></i> 最近瀏覽的系所</h6>
-                    <?php
-                    error_log("User ID in sidebar: " . $_SESSION['user_id']);
-                    ?>
                     <ul class="nav flex-column px-3" id="recentDeptsList">
                         <?php
                         require_once 'functions.php';
                         $recentDepts = getRecentViewedDepartments(5);
-                        error_log("Recent departments: " . print_r($recentDepts, true));
                         
                         if (empty($recentDepts)): ?>
                             <li class="nav-item">
@@ -108,11 +112,7 @@ include 'header.php';
                         <?php endif; ?>
                     </ul>
                 </div>
-                <?php 
-                else:
-                    error_log("User not logged in");
-                endif; 
-                ?>
+                <?php endif; ?>
 
                 <!-- 瀏覽記錄展開 Modal -->
                 <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
@@ -134,11 +134,11 @@ include 'header.php';
             </aside>
 
             <!-- 中間主內容 -->
-        <main class="col-md-10 pt-3 px-5">
+        <main class="col-md-10 pt-0 px-5">
             <!-- 主要內容 -->
-            <div class="container mt-4 pt-5">
+            <div class="container mt-0 pt-1">
                 <!-- 搜尋框 -->
-                <div class="search-box mb-4">
+                <div class="search-box mb-3">
                     <form method="GET" class="d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center flex-grow-1 me-3">
                             <input type="text" name="search" class="form-control form-control-lg" placeholder="搜尋系所..." value="<?= htmlspecialchars($search) ?>">

@@ -56,28 +56,39 @@ $pageTitle = $pageTitle ?? '轉系系統';
                 </a>
             </div>
             <div class="d-flex align-items-center">
+                <?php 
+                $current_page = basename($_SERVER['PHP_SELF']);
+                $is_admin_page = ($current_page === 'admin_dashboard.php' || $current_page === 'admin.php');
+                
+                if (!$is_admin_page): 
+                    if (isset($_SESSION['user_id'])): ?>
+                        <a href="compare.php" class="btn btn-outline-light me-2" id="compareButton">
+                            <i class="bi bi-arrow-left-right"></i> 比較系所
+                            <span class="badge bg-light text-dark" id="compare-count">0</span>
+                        </a>
+                    <?php else: ?>
+                        <a href="#" class="btn btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#loginModal">
+                            <i class="bi bi-arrow-left-right"></i> 比較系所
+                            <span class="badge bg-light text-dark" id="compare-count">0</span>
+                        </a>
+                    <?php endif;
+                endif; ?>
+
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="compare.php" class="btn btn-outline-light me-2" id="compareButton">
-                        <i class="bi bi-arrow-left-right"></i> 比較系所
-                        <span class="badge bg-light text-dark" id="compare-count">0</span>
-                    </a>
+                    <?php if ($current_page === 'admin_dashboard.php'): ?>
+                        <a href="logout.php" class="btn btn-outline-light me-2">登出</a>
+                    <?php else: ?>
+                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                        <a href="admin.php" class="btn btn-outline-light me-2">
+                            <i class="bi bi-gear"></i> 管理人員
+                        </a>
+                        <?php endif; ?>
+                        <a href="account_settings.php" class="btn btn-outline-light me-2">帳號設定</a>
+                        <a href="logout.php" class="btn btn-outline-light me-2">登出</a>
+                    <?php endif; ?>
                 <?php else: ?>
-                    <a href="#" class="btn btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#loginModal">
-                        <i class="bi bi-arrow-left-right"></i> 比較系所
-                        <span class="badge bg-light text-dark" id="compare-count">0</span>
-                    </a>
-                <?php endif; ?>
-                <?php if (!isset($_SESSION['user_id'])): ?>
                     <a href="login.php" class="btn btn-outline-light me-2">登入</a>
                     <a href="register.php" class="btn btn-outline-light me-2">註冊</a>
-                <?php else: ?>
-                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                    <a href="admin.php" class="btn btn-outline-light me-2">
-                        <i class="bi bi-gear"></i> 管理人員
-                    </a>
-                    <?php endif; ?>
-                    <a href="account_settings.php" class="btn btn-outline-light me-2">帳號設定</a>
-                    <a href="logout.php" class="btn btn-outline-light me-2">登出</a>
                 <?php endif; ?>
             </div>
         </div>

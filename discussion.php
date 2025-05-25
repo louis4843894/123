@@ -172,7 +172,7 @@ include 'header.php';
                                 <small class="text-muted">
                                     作者：<?= htmlspecialchars($post['username']) ?> | 
                                     系所：<?= htmlspecialchars($post['department_name']) ?> | 
-                                    發表時間：<?= date('Y-m-d H:i', strtotime($post['created_at'])) ?>
+                                    發表時間：<?= date('Y-m-d H:i:s', strtotime($post['created_at'])) ?>
                                 </small>
                                 <span class="badge bg-primary">
                                     <i class="bi bi-chat-dots"></i> <?= $post['reply_count'] ?> 回覆

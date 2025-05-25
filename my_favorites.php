@@ -94,7 +94,7 @@ include 'header.php';
                                     <i class="bi bi-chat"></i> <?= $post['reply_count'] ?>
                                 </div>
                                 <div class="text-muted small">
-                                    <?= date('Y-m-d H:i', strtotime($post['created_at'])) ?>
+                                    <?= date('Y-m-d H:i:s', strtotime($post['created_at'])) ?>
                                 </div>
                             </div>
                         </div>

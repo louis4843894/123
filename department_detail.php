@@ -265,7 +265,7 @@ include 'header.php';
     }
 </style>
 
-<div class="container mt-5 pt-5">
+<div class="container mt-2 pt-2">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0"><?php echo htmlspecialchars($department['department_name']); ?></h2>
     </div>

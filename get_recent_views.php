@@ -10,7 +10,8 @@ if (!isset($_SESSION['user_id'])) {
 
 try {
     $stmt = $pdo->prepare("
-        SELECT DISTINCT page_id as department_name, viewed_at 
+        SELECT DISTINCT page_id as department_name, 
+               DATE_FORMAT(viewed_at, '%Y-%m-%d %H:%i:%s') as viewed_at
         FROM browse_history 
         WHERE user_id = :user_id 
         AND page_type = 'department' 
@@ -40,6 +41,5 @@ try {
               </li>';
     }
 } catch (PDOException $e) {
-    error_log("Error in get_recent_views.php: " . $e->getMessage());
     echo '<li class="nav-item"><span class="nav-link text-muted py-1">載入瀏覽記錄時發生錯誤</span></li>';
 } 

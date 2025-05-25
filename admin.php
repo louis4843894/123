@@ -26,22 +26,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt = $pdo->prepare("INSERT INTO users (student_id, name, email, password, role) VALUES (?, ?, ?, ?, 'admin')");
         $stmt->execute([$_POST['student_id'], $_POST['name'], $_POST['email'], $password]);
     }
+    // 處理刪除使用者
+    else if ($_POST['action'] === 'delete_user' && isset($_POST['user_id'])) {
+        $user_id = intval($_POST['user_id']);
+        
+        // 確保使用者存在且不是管理員
+        $check_stmt = $pdo->prepare("SELECT id, role FROM users WHERE id = ? LIMIT 1");
+        $check_stmt->execute([$user_id]);
+        $user = $check_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($user && $user['role'] !== 'admin') {
+            $delete_stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+            $delete_stmt->execute([$user_id]);
+        }
+    }
     
     // 重新導向以避免重複提交
     header('Location: admin.php');
     exit;
 }
 
-// 搜尋條件
-$search = isset($_GET['search']) ? trim($_GET['search']) : '';
-
 // 撈取使用者資料
-if (!empty($search)) {
-    $stmt = $pdo->prepare("SELECT id, student_id, name, email, role FROM users WHERE student_id LIKE :search OR name LIKE :search OR email LIKE :search ORDER BY role DESC, student_id ASC");
-    $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
-} else {
-    $stmt = $pdo->prepare("SELECT id, student_id, name, email, role FROM users ORDER BY role DESC, student_id ASC");
-}
+$stmt = $pdo->prepare("SELECT id, student_id, name, email, role FROM users ORDER BY role DESC, student_id ASC");
 $stmt->execute();
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -56,28 +62,6 @@ include 'header.php';
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         padding: 1.5rem;
         margin-bottom: 2rem;
-    }
-
-    .search-box {
-        background-color: white;
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        margin-bottom: 1.5rem;
-    }
-
-    .btn-search {
-        padding: 0.5rem 1.5rem;
-        background-color: rgb(75, 100, 158);
-        color: white;
-        border: none !important;
-        outline: none !important;
-        border-radius: 0.5rem;
-    }
-
-    .btn-search:hover {
-        color: white;
-        background-color: rgb(91, 120, 189);
     }
 
     .btn-change-password {
@@ -96,7 +80,7 @@ include 'header.php';
 
     .btn-change-role {
         padding: 0.5rem 1rem;
-        background-color: rgb(104, 128, 151);
+        background-color: rgb(87, 112, 136);
         color: white;
         border: none !important;
         outline: none !important;
@@ -106,6 +90,20 @@ include 'header.php';
     .btn-change-role:hover {
         color: white;
         background-color: rgb(115, 149, 179);
+    }
+
+    .btn-delete-user {
+        padding: 0.5rem 1rem;
+        background-color: rgb(255, 200, 200);
+        color: rgb(220, 53, 69);
+        border: none !important;
+        outline: none !important;
+        border-radius: 0.5rem;
+    }
+
+    .btn-delete-user:hover {
+        color: white;
+        background-color: rgb(220, 53, 69);
     }
 
     .modal-content {
@@ -123,22 +121,7 @@ include 'header.php';
     }
 </style>
 
-<div class="container mt-5 pt-5">
-    <!-- 搜尋框 -->
-    <div class="search-box">
-        <form method="GET" class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center flex-grow-1 me-3">
-                <input type="text" name="search" class="form-control form-control-lg" placeholder="搜尋帳號、姓名或Email..." value="<?= htmlspecialchars($search) ?>">
-                <button type="submit" class="btn btn-search ms-2">搜尋</button>
-            </div>
-        </form>
-    </div>
-
-    <!-- 新增管理員按鈕 -->
-    <button type="button" class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#addAdminModal">
-        <i class="bi bi-person-plus"></i> 新增管理員
-    </button>
-
+<div class="container mt-2 pt-2">
     <!-- 管理員列表 -->
     <div class="admin-section">
         <h3 class="mb-4">管理員帳號</h3>
@@ -201,6 +184,9 @@ include 'header.php';
                                 </button>
                                 <button type="button" class="btn btn-change-role" data-bs-toggle="modal" data-bs-target="#changeRoleModal" data-user-id="<?= $user['id'] ?>" data-user-name="<?= htmlspecialchars($user['name']) ?>" data-current-role="user">
                                     設為管理員
+                                </button>
+                                <button type="button" class="btn btn-delete-user" data-bs-toggle="modal" data-bs-target="#deleteUserModal" data-user-id="<?= $user['id'] ?>" data-user-name="<?= htmlspecialchars($user['name']) ?>">
+                                    刪除帳號
                                 </button>
                             </td>
                         </tr>
@@ -299,6 +285,29 @@ include 'header.php';
     </div>
 </div>
 
+<!-- 刪除使用者 Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">刪除使用者</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="deleteUserForm" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete_user">
+                    <input type="hidden" name="user_id" id="deleteUserId">
+                    <p>確定要刪除 <span id="deleteUserName"></span> 的帳號嗎？此操作無法復原。</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-danger">確認刪除</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // 修改密碼 Modal
@@ -325,6 +334,33 @@ document.querySelectorAll('.btn-change-role').forEach(button => {
         document.getElementById('roleUserName').textContent = userName;
         document.getElementById('roleChangeText').textContent = roleText;
     });
+});
+
+// 刪除使用者 Modal
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteUserModal = document.getElementById('deleteUserModal');
+    const deleteUserForm = document.getElementById('deleteUserForm');
+    
+    if (deleteUserModal) {
+        deleteUserModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const userId = button.getAttribute('data-user-id');
+            const userName = button.getAttribute('data-user-name');
+            
+            document.getElementById('deleteUserId').value = userId;
+            document.getElementById('deleteUserName').textContent = userName;
+        });
+    }
+
+    if (deleteUserForm) {
+        deleteUserForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const userId = document.getElementById('deleteUserId').value;
+            if (userId) {
+                this.submit();
+            }
+        });
+    }
 });
 </script>
 

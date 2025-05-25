@@ -39,7 +39,7 @@ $upcomingEvents = array_filter($schedules, function($schedule) {
 });
 ?>
 
-<div class="schedule-container">
+<div class="container mt-2 pt-2">
     <h1 class="text-center mb-4">考試與面試時程表</h1>
 
     <?php if (!empty($upcomingEvents)): ?>

@@ -1,7 +1,6 @@
 <?php
 require_once 'config.php';
 require_once 'auth_check.php';
-session_start();
 
 $pageTitle = '帳號設定';
 require 'header.php';
@@ -43,7 +42,7 @@ if (!$user) {
 }
 ?>
 
-<div class="container min-vh-100 d-flex align-items-center justify-content-center py-5">
+<div class="container mt-2 pt-2">
     <div class="row w-100">
         <div class="col-md-6 mx-auto">
             <div class="card shadow">

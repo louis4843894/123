@@ -62,7 +62,7 @@ $pageTitle = $pageTitle ?? '轉系系統';
     </nav>
 
     <!-- 主要內容容器 -->
-    <div class="container mt-5 pt-4">
+    <div class="container mt-2 pt-2">
 
     <script>
         // 比較系所 script removed
