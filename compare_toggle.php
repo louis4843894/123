@@ -27,7 +27,7 @@ $action = $data['action'];
 
 if ($action === 'add') {
     // 檢查是否已達到最大比較數量
-    if (count($_SESSION['compare_list']) >= 3) {
+    if (count($_SESSION['compare_list']) >= 3 && !in_array($department_name, $_SESSION['compare_list'])) {
         echo json_encode(['status' => 'error', 'message' => '最多只能比較三個系所']);
         exit;
     }

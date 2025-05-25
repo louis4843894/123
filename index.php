@@ -25,10 +25,10 @@ $total_pages = ceil($total_departments / $limit);
 // 撈取當頁資料
 try {
 if (!empty($search)) {
-        $stmt = $pdo->prepare("SELECT name as department_name, intro as department_intro FROM departments WHERE name LIKE :search ORDER BY name ASC LIMIT :limit OFFSET :offset");
+        $stmt = $pdo->prepare("SELECT name as department_name, intro_summary as department_intro FROM departments WHERE name LIKE :search ORDER BY name ASC LIMIT :limit OFFSET :offset");
     $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
 } else {
-        $stmt = $pdo->prepare("SELECT name as department_name, intro as department_intro FROM departments ORDER BY name ASC LIMIT :limit OFFSET :offset");
+        $stmt = $pdo->prepare("SELECT name as department_name, intro_summary as department_intro FROM departments ORDER BY name ASC LIMIT :limit OFFSET :offset");
 }
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
@@ -58,7 +58,7 @@ include 'header.php';
             <!-- 左側邊欄 -->
         <aside class="col-md-2 bg-light border-end vh-100 pt-5 mt-4">
             <div class="mt-2">
-                <h5 class="px-3">🔖 快捷功能</h5>
+                <h5 class="px-3">其他功能</h5>
                 <ul class="nav flex-column px-3">
                     <li class="nav-item mb-2">
                         <a href="discussion.php" class="nav-link btn btn-warning text-dark fw-bold mb-2">
@@ -70,14 +70,66 @@ include 'header.php';
                             <i class="bi bi-calendar-event"></i> 時程表
                         </a>
                     </li>
-                    <li class="nav-item mb-2">
-                        <a href="recent_views.php" class="nav-link btn btn-secondary text-dark fw-bold mb-2">
-                            <i class="bi bi-clock-history"></i> 最近瀏覽
-                        </a>
-                    </li>
                     <li class="nav-item mb-2"><a href="#" class="nav-link text-dark">▸ 設定提醒</a></li>
                     <li class="nav-item mb-2"><a href="transfer_qa.php" class="nav-link text-dark">▸ 轉系 Q&A</a></li>
                 </ul>
+
+                <?php if (isset($_SESSION['user_id'])): ?>
+                <div class="mt-4">
+                    <h6 class="px-3 mb-3"><i class="bi bi-clock-history"></i> 最近瀏覽的系所</h6>
+                    <?php
+                    error_log("User ID in sidebar: " . $_SESSION['user_id']);
+                    ?>
+                    <ul class="nav flex-column px-3" id="recentDeptsList">
+                        <?php
+                        require_once 'functions.php';
+                        $recentDepts = getRecentViewedDepartments(5);
+                        error_log("Recent departments: " . print_r($recentDepts, true));
+                        
+                        if (empty($recentDepts)): ?>
+                            <li class="nav-item">
+                                <span class="nav-link text-muted py-1">暫無瀏覽記錄</span>
+                            </li>
+                        <?php else:
+                            foreach ($recentDepts as $dept): ?>
+                                <li class="nav-item">
+                                    <a href="department_detail.php?name=<?= urlencode($dept['department_name']) ?>" 
+                                       class="nav-link text-dark py-1"
+                                       onclick="return handleDeptClick('<?= htmlspecialchars($dept['department_name'], ENT_QUOTES) ?>', this)">
+                                        ▸ <?= htmlspecialchars($dept['department_name']) ?>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                            <li class="nav-item mt-2">
+                                <a href="#" class="nav-link" id="showAllHistory" style="color: #6c757d;">
+                                    <small><i class="bi bi-chevron-down">更多瀏覽記錄 </i></small>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+                <?php 
+                else:
+                    error_log("User not logged in");
+                endif; 
+                ?>
+
+                <!-- 瀏覽記錄展開 Modal -->
+                <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="historyModalLabel">瀏覽記錄</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div id="fullHistoryList">
+                                    <!-- 這裡會由 JavaScript 填充完整的瀏覽記錄 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             </aside>
 
@@ -126,7 +178,7 @@ include 'header.php';
                         <table class="table">
                                 <thead>
                                     <tr>
-                                    <th width="25%">系所名稱</th>
+                                    <th width="25%" class="text-start">系所名稱</th>
                                     <th width="50%">系所簡介</th>
                                     <th width="25%" class="ps-5">操作</th>
                                     </tr>
@@ -141,7 +193,7 @@ include 'header.php';
                                     <?php else: ?>
                                         <?php foreach ($departments as $dept): ?>
                                             <tr>
-                                        <td class="text-dark ps-5">
+                                        <td class="text-dark">
                                             <?= htmlspecialchars($dept['department_name']) ?>
                                                 </td>
                                                 <td>
@@ -154,15 +206,17 @@ include 'header.php';
                                                 </td>
                                                 <td>
                                             <div class="d-flex gap-2 justify-content-start ps-5">
-                                                <a href="department_detail.php?name=<?= urlencode($dept['department_name']) ?>" class="btn-more w-40 text-center py-2">
+                                                <a href="department_detail.php?name=<?= urlencode($dept['department_name']) ?>" 
+                                                   class="btn-more w-40 text-center py-2"
+                                                   onclick="recordDeptView('<?= htmlspecialchars($dept['department_name'], ENT_QUOTES) ?>', this); return false;">
                                                     點我詳情
                                                 </a>
                                                 <button class="btn-add w-40 text-center py-2 toggle-compare-btn" 
                                                         data-dept="<?= htmlspecialchars($dept['department_name']) ?>"
                                                         data-action="add">
                                                     加入比較
-                                                                    </button>
-                                                    </div>
+                                                </button>
+                                            </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -236,6 +290,134 @@ include 'header.php';
     </div>
 
     <script>
+    // 處理系所點擊
+    function handleDeptClick(deptName, element) {
+        if (!deptName) return true;
+        
+        // 發送瀏覽記錄
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'record_view.php', false); // 使用同步請求
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        
+        try {
+            xhr.send(JSON.stringify({
+                page_type: 'department',
+                page_id: deptName,
+                page_title: deptName
+            }));
+            
+            if (xhr.status === 200) {
+                // 立即更新瀏覽記錄
+                updateRecentViews();
+            }
+        } catch (error) {
+            console.error('Error recording view:', error);
+        }
+        
+        return true; // 允許正常的頁面跳轉
+    }
+
+    // 更新瀏覽記錄
+    function updateRecentViews() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'get_recent_views.php', false); // 使用同步請求
+        
+        try {
+            xhr.send();
+            if (xhr.status === 200) {
+                var recentList = document.getElementById('recentDeptsList');
+                if (recentList) {
+                    recentList.innerHTML = xhr.responseText;
+                }
+            }
+        } catch (error) {
+            console.error('Error updating views:', error);
+        }
+    }
+
+    // 處理查看更多按鈕
+    document.addEventListener('DOMContentLoaded', function() {
+        var showAllBtn = document.getElementById('showAllHistory');
+        if (showAllBtn) {
+            showAllBtn.onclick = function(e) {
+                e.preventDefault();
+                
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', 'get_all_history.php', true);
+                
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            var historyList = document.getElementById('fullHistoryList');
+                            if (!historyList) return;
+                            
+                            historyList.innerHTML = '';
+                            
+                            if (!data || data.length === 0) {
+                                historyList.innerHTML = '<p class="text-muted">暫無瀏覽記錄</p>';
+                            } else {
+                                var ul = document.createElement('ul');
+                                ul.className = 'list-unstyled';
+                                
+                                // 添加標題和說明
+                                var header = document.createElement('div');
+                                header.className = 'mb-4';
+                                header.innerHTML = `
+                                    <h6 class="mb-3">所有瀏覽記錄</h6>
+                                    <p class="text-muted small">顯示您的所有系所瀏覽記錄，按時間順序排列。</p>
+                                `;
+                                historyList.appendChild(header);
+                                
+                                // 按日期分組顯示記錄
+                                var currentDate = '';
+                                data.forEach(function(dept) {
+                                    var recordDate = dept.viewed_at.split(' ')[0];
+                                    
+                                    if (recordDate !== currentDate) {
+                                        currentDate = recordDate;
+                                        var dateHeader = document.createElement('div');
+                                        dateHeader.className = 'mt-4 mb-2 text-muted';
+                                        dateHeader.innerHTML = formatDate(recordDate);
+                                        ul.appendChild(dateHeader);
+                                    }
+                                    
+                                    var li = document.createElement('li');
+                                    li.className = 'mb-2 ps-3';
+                                    li.innerHTML = `
+                                        <a href="department_detail.php?name=${encodeURIComponent(dept.department_name)}" 
+                                           onclick="recordDeptView('${dept.department_name}', this); return false;"
+                                           class="text-decoration-none text-dark">
+                                            ▸ ${dept.department_name}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">
+                                            ${dept.viewed_at.split(' ')[1]}
+                                        </small>
+                                    `;
+                                    ul.appendChild(li);
+                                });
+                                
+                                historyList.appendChild(ul);
+                            }
+                            
+                            var historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
+                            historyModal.show();
+                        } catch (error) {
+                            console.error('Error parsing history:', error);
+                        }
+                    }
+                };
+                
+                xhr.send();
+            };
+        }
+        
+        // 每30秒更新一次瀏覽記錄
+        setInterval(updateRecentViews, 30000);
+    });
+
+    // 處理比較按鈕點擊
     document.addEventListener("DOMContentLoaded", function () {
         // 初始化所有按鈕的狀態
         function initializeCompareButtons() {
@@ -245,12 +427,12 @@ include 'header.php';
                 if (compareList.includes(deptName)) {
                     btn.classList.remove("btn-add");
                     btn.classList.add("btn-remove");
-                    btn.innerHTML = '移出比較';
+                    btn.textContent = '移出比較';
                     btn.dataset.action = "remove";
                 } else {
                     btn.classList.remove("btn-remove");
                     btn.classList.add("btn-add");
-                    btn.innerHTML = '加入比較';
+                    btn.textContent = '加入比較';
                     btn.dataset.action = "add";
                 }
             });
@@ -263,7 +445,7 @@ include 'header.php';
         }
 
         // ✅ 搜尋清空 → 回首頁
-            const searchInput = document.querySelector("input[name='search']");
+        const searchInput = document.querySelector("input[name='search']");
         if (searchInput) {
             searchInput.addEventListener("input", function () {
                 if (searchInput.value.trim() === "") {
@@ -311,7 +493,6 @@ include 'header.php';
             if (!btn) return;
 
             <?php if (!isset($_SESSION['user_id'])): ?>
-                // 如果未登入，顯示登入提示 Modal
                 var loginModalAddCompare = new bootstrap.Modal(document.getElementById('loginModalAddCompare'));
                 loginModalAddCompare.show();
                 return;
@@ -323,46 +504,85 @@ include 'header.php';
                 // 檢查是否達到最大比較數量
                 if (action === "add") {
                     const compareList = JSON.parse(localStorage.getItem('compare_departments') || '[]');
-                    if (compareList.length >= 3) {
-                        showAlert('最多只能同時比較3個系所，請先移除其中一個系所後再進行添加');
+                    if (compareList.length >= 3 && !compareList.includes(deptName)) {
+                        alert('最多只能同時比較3個系所，請先移除其中一個系所後再進行添加');
                         return;
                     }
                 }
 
-                // 更新 localStorage
-                let compareList = JSON.parse(localStorage.getItem('compare_departments') || '[]');
-                
+                // 更新按鈕狀態
                 if (action === "add") {
                     btn.classList.remove("btn-add");
                     btn.classList.add("btn-remove");
-                    btn.innerHTML = '移出比較';
+                    btn.textContent = '移出比較';
                     btn.dataset.action = "remove";
-                    // 添加到比較列表
+                } else {
+                    btn.classList.remove("btn-remove");
+                    btn.classList.add("btn-add");
+                    btn.textContent = '加入比較';
+                    btn.dataset.action = "add";
+                }
+
+                // 更新 localStorage
+                let compareList = JSON.parse(localStorage.getItem('compare_departments') || '[]');
+                if (action === "add") {
                     if (!compareList.includes(deptName)) {
                         compareList.push(deptName);
                     }
                 } else {
-                    btn.classList.remove("btn-remove");
-                    btn.classList.add("btn-add");
-                    btn.innerHTML = '加入比較';
-                    btn.dataset.action = "add";
-                    // 從比較列表中移除
                     compareList = compareList.filter(dept => dept !== deptName);
                 }
-                
-                // 更新 localStorage
                 localStorage.setItem('compare_departments', JSON.stringify(compareList));
                 
-                // 更新所有按鈕的狀態
-                initializeCompareButtons();
+                // 更新計數器
+                const countElements = document.querySelectorAll('#compare-count');
+                countElements.forEach(element => {
+                    element.textContent = compareList.length;
+                });
 
                 // 更新後端
-                fetch("compare_toggle.php", {
-                    method: "POST",
+                fetch('compare_toggle.php', {
+                    method: 'POST',
                     headers: {
-                        "Content-Type": "application/json"
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ department_name: deptName, action: action })
+                    body: JSON.stringify({
+                        department_name: deptName,
+                        action: action
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'error') {
+                        alert(data.message);
+                        // 如果發生錯誤，恢復按鈕狀態
+                        if (action === 'add') {
+                            btn.classList.remove('btn-remove');
+                            btn.classList.add('btn-add');
+                            btn.textContent = '加入比較';
+                            btn.dataset.action = 'add';
+                            // 恢復 localStorage 和計數器
+                            compareList = compareList.filter(dept => dept !== deptName);
+                        } else {
+                            btn.classList.remove('btn-add');
+                            btn.classList.add('btn-remove');
+                            btn.textContent = '移出比較';
+                            btn.dataset.action = 'remove';
+                            // 恢復 localStorage 和計數器
+                            if (!compareList.includes(deptName)) {
+                                compareList.push(deptName);
+                            }
+                        }
+                        localStorage.setItem('compare_departments', JSON.stringify(compareList));
+                        // 更新計數器
+                        countElements.forEach(element => {
+                            element.textContent = compareList.length;
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('操作失敗，請稍後再試');
                 });
             <?php endif; ?>
         });
@@ -370,6 +590,71 @@ include 'header.php';
         // 初始化頁面時的按鈕狀態
         initializeCompareButtons();
     });
+
+    function recordDeptView(deptName, link) {
+        // 建立 XMLHttpRequest 對象
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'record_view.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        // 準備要發送的數據
+        var data = 'department_name=' + encodeURIComponent(deptName);
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                // 無論成功與否都更新側邊欄並跳轉
+                var sidebarXhr = new XMLHttpRequest();
+                sidebarXhr.open('GET', 'get_recent_views.php', true);
+                
+                sidebarXhr.onreadystatechange = function() {
+                    if (sidebarXhr.readyState === 4) {
+                        var recentList = document.getElementById('recentDeptsList');
+                        if (recentList) {
+                            recentList.innerHTML = sidebarXhr.responseText;
+                        }
+                        // 跳轉到目標頁面
+                        window.location.href = link.href;
+                    }
+                };
+                
+                sidebarXhr.send();
+            }
+        };
+        
+        // 發送請求
+        xhr.send(data);
+    }
+
+    // 定期更新側邊欄
+    setInterval(function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'get_recent_views.php', true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var recentList = document.getElementById('recentDeptsList');
+                if (recentList) {
+                    recentList.innerHTML = xhr.responseText;
+                }
+            }
+        };
+        xhr.send();
+    }, 30000);
+
+    // 添加日期格式化函數
+    function formatDate(dateStr) {
+        var date = new Date(dateStr);
+        var today = new Date();
+        var yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (dateStr === today.toISOString().split('T')[0]) {
+            return '今天';
+        } else if (dateStr === yesterday.toISOString().split('T')[0]) {
+            return '昨天';
+        } else {
+            return dateStr;
+        }
+    }
 </script>
 
 <style>
@@ -403,6 +688,26 @@ include 'header.php';
 }
 .w-40 {
     width: 40% !important;
+}
+
+/* 查看更多瀏覽記錄按鈕樣式 */
+.show-all-history {
+    color: #6c757d !important;  /* 使用 Bootstrap 的次要文字顏色 */
+    text-decoration: none !important;
+    font-size: 0.9rem;
+    padding: 0.25rem 0;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.15s ease-in-out;
+}
+
+.show-all-history:hover {
+    color: #495057 !important;  /* 滑鼠懸停時的顏色 */
+}
+
+.show-all-history .bi-chevron-down {
+    font-size: 0.8rem;
+    margin-right: 0.25rem;
 }
 </style>
 

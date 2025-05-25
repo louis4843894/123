@@ -68,4 +68,21 @@ config.local.php
 config.php
 *.sublime-project
 *.sublime-workspace
-reset_debug.log 
+reset_debug.log
+
+# PHP specific
+vendor/
+composer.lock
+
+# Logs and databases
+*.sql
+*.sqlite
+
+# Config files with sensitive information
+config.php
+
+# Cache and temporary files
+*.cache
+*.tmp
+temp/
+cache/ 

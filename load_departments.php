@@ -102,10 +102,8 @@ $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <?php else: ?>
         <?php foreach ($departments as $dept): ?>
         <tr>
-            <td>
-                <a href="department_detail.php?name=<?= urlencode($dept['department_name']) ?>" class="department-link">
-                    <?= htmlspecialchars($dept['department_name']) ?>
-                </a>
+            <td class="text-dark">
+                <?= htmlspecialchars($dept['department_name']) ?>
             </td>
             <td>
                 <p class="mb-0 text-muted">
@@ -116,14 +114,16 @@ $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </p>
             </td>
             <td>
-                <div class="d-flex gap-2">
-                    <a href="department_detail.php?name=<?= urlencode($dept['department_name']) ?>" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-info-circle"></i> 詳細資訊
+                <div class="d-flex gap-2 justify-content-start ps-5">
+                    <a href="department_detail.php?name=<?= urlencode($dept['department_name']) ?>" 
+                       class="btn-more w-40 text-center py-2"
+                       onclick="recordView('<?= htmlspecialchars($dept['department_name']) ?>')">
+                        點我詳情
                     </a>
-                    <button class="btn btn-sm btn-success toggle-compare-btn" 
+                    <button class="btn-add w-40 text-center py-2 toggle-compare-btn" 
                             data-dept="<?= htmlspecialchars($dept['department_name']) ?>"
                             data-action="add">
-                        <i class="bi bi-plus-circle"></i> 加入比較
+                        加入比較
                     </button>
                 </div>
             </td>

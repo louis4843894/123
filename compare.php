@@ -83,9 +83,7 @@ if (isset($_GET['departments'])) {
 <div class="container mt-5 pt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>系所比較</h2>
-        <a href="index.php" class="btn btn-outline-primary">
-            <i class="bi bi-arrow-left"></i> 返回首頁
-        </a>
+        
     </div>
     
                 <div class="table-responsive">

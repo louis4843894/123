@@ -123,7 +123,7 @@ include 'header.php';
     }
 </style>
 
-<div class="container mt-4">
+<div class="container mt-5 pt-5">
     <!-- 搜尋框 -->
     <div class="search-box">
         <form method="GET" class="d-flex justify-content-between align-items-center">
