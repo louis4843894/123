@@ -14,19 +14,9 @@ try {
     $pdo->exec("CREATE DATABASE IF NOT EXISTS fju CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
     $pdo->exec("USE fju");
     
-    // 創建 DepartmentTransfer 表
-    $sql = "CREATE TABLE IF NOT EXISTS DepartmentTransfer (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        department_name VARCHAR(255) NOT NULL,
-        year_2_enrollment VARCHAR(50),
-        year_3_enrollment VARCHAR(50),
-        year_4_enrollment VARCHAR(50),
-        exam_subjects TEXT,
-        data_review_ratio VARCHAR(50)
-    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
-    $pdo->exec($sql);
+    // ===== 系所相關資料表 =====
     
-    // 創建 departments 表
+    // 創建系所基本資料表
     $sql = "CREATE TABLE IF NOT EXISTS departments (
         id INT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -37,10 +27,149 @@ try {
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
     $pdo->exec($sql);
     
-    // 插入系所詳細資料 (departments 表)
-    // 刪除現有資料以避免重複插入
-    $pdo->exec("DELETE FROM departments");
+    // 創建系所詳細資料表
+    $sql = "CREATE TABLE IF NOT EXISTS department_details (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        department_id INT NOT NULL,
+        detail_type VARCHAR(50) NOT NULL,
+        content TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+    $pdo->exec($sql);
     
+    // 創建轉系資料表 (整合了考試類型和備註功能)
+    $sql = "CREATE TABLE IF NOT EXISTS DepartmentTransfer (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        department_name VARCHAR(255) NOT NULL,
+        year_2_enrollment VARCHAR(50),
+        year_3_enrollment VARCHAR(50),
+        year_4_enrollment VARCHAR(50),
+        exam_subjects TEXT,
+        data_review_ratio VARCHAR(50),
+        exam_type VARCHAR(100),
+        remarks TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+    $pdo->exec($sql);
+    
+    // ===== 使用者相關資料表 =====
+    
+    // 創建使用者表
+    $sql = "CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        student_id VARCHAR(20) NOT NULL UNIQUE,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        role ENUM('admin', 'user') NOT NULL DEFAULT 'user',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX (email),
+        INDEX (student_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+    $pdo->exec($sql);
+    
+    // 創建密碼重設表
+    $sql = "CREATE TABLE IF NOT EXISTS password_resets (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        token VARCHAR(64) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX (email),
+        INDEX (token)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+    $pdo->exec($sql);
+    
+    // ===== 討論區相關資料表 =====
+    
+    // 創建討論文章表
+    $sql = "CREATE TABLE IF NOT EXISTS discussion_posts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+    $pdo->exec($sql);
+    
+    // 創建討論回覆表
+    $sql = "CREATE TABLE IF NOT EXISTS discussion_replies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        post_id INT NOT NULL,
+        user_id INT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (post_id) REFERENCES discussion_posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+    $pdo->exec($sql);
+    
+    // 創建文章按讚表
+    $sql = "CREATE TABLE IF NOT EXISTS post_likes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        post_id INT NOT NULL,
+        user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_like (post_id, user_id),
+        FOREIGN KEY (post_id) REFERENCES discussion_posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+    $pdo->exec($sql);
+    
+    // 創建文章收藏表
+    $sql = "CREATE TABLE IF NOT EXISTS post_favorites (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        post_id INT NOT NULL,
+        user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_favorite (post_id, user_id),
+        FOREIGN KEY (post_id) REFERENCES discussion_posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+    $pdo->exec($sql);
+    
+    // ===== 其他功能資料表 =====
+    
+    // 創建考試時程表
+    $sql = "CREATE TABLE IF NOT EXISTS exam_schedule (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        date DATE NOT NULL,
+        event VARCHAR(100) NOT NULL,
+        time VARCHAR(50) NOT NULL,
+        location VARCHAR(100) NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+    $pdo->exec($sql);
+    
+    // 創建系所比較清單表
+    $sql = "CREATE TABLE IF NOT EXISTS compare_list (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        department_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_compare (user_id, department_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+    $pdo->exec($sql);
+    
+    // 插入預設管理員帳號
+    $admin_password = password_hash('admin123', PASSWORD_DEFAULT, ['cost' => 10]);
+    $stmt = $pdo->prepare("INSERT IGNORE INTO users (student_id, name, email, password, role) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute(['admin001', '系統管理員', 'admin@fju.edu.tw', $admin_password, 'admin']);
+    
+    // 插入預設考試時程
+    $sql = "INSERT INTO exam_schedule (date, event, time, location) VALUES 
+    ('2025-06-01', '考試', '09:00 - 11:00', '教室 A'),
+    ('2025-06-02', '面試', '13:00 - 15:00', '教室 B'),
+    ('2025-06-03', '考試', '10:00 - 12:00', '教室 C')";
+    $pdo->exec($sql);
+    
+    // 插入系所詳細資料
     $sql = "INSERT INTO departments (id, name, intro, careers, url, college) VALUES
 (1, '中國文學系', '以古典與現當代漢語文學為主體，結合文獻學、比較文學、文本批評與數位人文方法，培養學生批判思考與創作能力。課程涵蓋先秦文獻、唐詩宋詞、小說戲劇及當代文學專題研究。', '[\"中 小學及大專院校教師\", \"出版／編輯、書評人\", \"文化創意產業（策展、公關）\", \"新聞傳播、數位內容編輯\", \"研究所深造、數位人文專案\"]', 'https://chinese.fju.edu.tw/', '文學院'),
 (2, '歷史學系', '聚焦東亞與世界史研究，從史料詮釋、歷史理論到田野調查，訓練學生理解社會變遷脈絡與文化互動。強調跨領域方法，並提供博物館學、文化遺產保存等實務課程。', '[\"博物館／檔案館典藏管理\", \"公部門文史研究、文化資產維護\", \"教育教職（中 小學／大學）\", \"文化觀光產業、導覽解說\", \"研究所、博士班深造\"]', 'https://www.history.fju.edu.tw/', '文學院'),
@@ -103,52 +232,6 @@ try {
 (59, '人工智慧與資訊安全學士學位學程', '結合機器學習、深度學習與資安理論，涵蓋入侵偵測、區塊鏈與數位鑑識實務。', '[\"資安工程師、滲透測試師\", \"AI 產品開發與研究\", \"區塊鏈應用開發\", \"研究所深造\"]', 'https://www.ais.fju.edu.tw/', '理工學院'),
 (60, '跨領域全英語學士學位學程', '以英語為授課語言，整合管理、科技、社會科學與人文議題，強調全球視野與跨文化交流。', '[\"國際業務／專案經理\", \"全球 NGO／國際組織\", \"跨國企業／諮詢顧問\", \"海外深造與交換\"]', 'https://bpis.fju.edu.tw/', '國際學院');
     ";
-    $pdo->exec($sql);
-    
-    // 建立密碼重設表
-    $pdo->exec("CREATE TABLE IF NOT EXISTS password_resets (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(255) NOT NULL,
-        token VARCHAR(64) NOT NULL,
-        expires_at DATETIME NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX (email),
-        INDEX (token)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-    
-    // 建立用戶表
-    $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        student_id VARCHAR(20) NOT NULL UNIQUE,
-        name VARCHAR(100) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'user') NOT NULL DEFAULT 'user',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX (email),
-        INDEX (student_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-    
-    // 建立預設管理員帳號
-    $admin_password = password_hash('admin123', PASSWORD_DEFAULT, ['cost' => 10]);
-    $stmt = $pdo->prepare("INSERT IGNORE INTO users (student_id, name, email, password, role) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute(['admin001', '系統管理員', 'admin@fju.edu.tw', $admin_password, 'admin']);
-    
-    // 創建考試時程表
-    $sql = "CREATE TABLE IF NOT EXISTS exam_schedule (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        date DATE NOT NULL,
-        event VARCHAR(100) NOT NULL,
-        time VARCHAR(50) NOT NULL,
-        location VARCHAR(100) NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-    $pdo->exec($sql);
-    
-    // 插入預設考試時程
-    $sql = "INSERT INTO exam_schedule (date, event, time, location) VALUES 
-    ('2025-06-01', '考試', '09:00 - 11:00', '教室 A'),
-    ('2025-06-02', '面試', '13:00 - 15:00', '教室 B'),
-    ('2025-06-03', '考試', '10:00 - 12:00', '教室 C')";
     $pdo->exec($sql);
     
     echo "資料庫初始化成功！";

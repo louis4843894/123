@@ -1,58 +1,77 @@
 <?php
 require_once 'config.php';
+session_start();
 
-function executeQuery($pdo, $query, $title) {
-    echo "<h4>{$title}</h4>";
+// 檢查是否為管理員
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header('Location: login.php');
+    exit;
+}
+
+$pageTitle = '資料檢查';
+include 'header.php';
+
+// 檢查資料表
+$tables = [
+    'departments' => '系所資料',
+    'department_details' => '系所詳細資料',
+    'DepartmentTransfer' => '轉系資料',
+    'users' => '使用者資料',
+    'password_resets' => '密碼重設資料',
+    'discussion_posts' => '討論區文章',
+    'discussion_replies' => '討論區回覆',
+    'post_likes' => '文章按讚',
+    'post_favorites' => '文章收藏',
+    'exam_schedule' => '考試時程',
+    'compare_list' => '比較清單'
+];
+
+$results = [];
+foreach ($tables as $table => $description) {
     try {
-        $stmt = $pdo->query($query);
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo "<pre>";
-        if (count($results) > 0) {
-            print_r($results);
-        } else {
-            echo "查詢結果為空（沒有找到資料）\n";
-        }
-        echo "</pre>";
-        return $results;
-    } catch(PDOException $e) {
-        echo "<div style='color: red;'>錯誤: " . $e->getMessage() . "</div>";
-        echo "<div>執行的SQL查詢: " . $query . "</div>";
-        return false;
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM $table");
+        $count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        $results[$table] = [
+            'status' => 'success',
+            'count' => $count,
+            'message' => "成功讀取 $description，共有 $count 筆資料"
+        ];
+    } catch (PDOException $e) {
+        $results[$table] = [
+            'status' => 'error',
+            'message' => "讀取 $description 時發生錯誤：" . $e->getMessage()
+        ];
     }
 }
+?>
 
-try {
-    echo "<h3>資料表結構檢查</h3>";
+<div class="container mt-4">
+    <h2>資料檢查</h2>
     
-    // 檢查 departmenttransfer 表格結構
-    echo "<h4>departmenttransfer 表格結構：</h4>";
-    $stmt = $pdo->query("SHOW COLUMNS FROM departmenttransfer");
-    echo "<pre>";
-    print_r($stmt->fetchAll(PDO::FETCH_ASSOC));
-    echo "</pre>";
-    
-    // 檢查 departmentremarkssplit 表格結構
-    echo "<h4>departmentremarkssplit 表格結構：</h4>";
-    $stmt = $pdo->query("SHOW COLUMNS FROM departmentremarkssplit");
-    echo "<pre>";
-    print_r($stmt->fetchAll(PDO::FETCH_ASSOC));
-    echo "</pre>";
-    
-    // 檢查 departmenttransfer 的實際資料
-    echo "<h4>departmenttransfer 表格資料：</h4>";
-    $stmt = $pdo->query("SELECT * FROM departmenttransfer LIMIT 1");
-    echo "<pre>";
-    print_r($stmt->fetch(PDO::FETCH_ASSOC));
-    echo "</pre>";
-    
-    // 檢查 departmentremarkssplit 的實際資料
-    echo "<h4>departmentremarkssplit 表格資料：</h4>";
-    $stmt = $pdo->query("SELECT * FROM departmentremarkssplit LIMIT 1");
-    echo "<pre>";
-    print_r($stmt->fetch(PDO::FETCH_ASSOC));
-    echo "</pre>";
+    <div class="row mt-4">
+        <?php foreach ($results as $table => $result): ?>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><?php echo $tables[$table]; ?></h5>
+                        <p class="card-text">
+                            <?php if ($result['status'] === 'success'): ?>
+                                <span class="text-success">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <?php echo $result['message']; ?>
+                                </span>
+                            <?php else: ?>
+                                <span class="text-danger">
+                                    <i class="bi bi-exclamation-circle-fill"></i>
+                                    <?php echo $result['message']; ?>
+                                </span>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
 
-} catch(PDOException $e) {
-    echo "錯誤: " . $e->getMessage();
-}
-?> 
+<?php include 'footer.php'; ?> 

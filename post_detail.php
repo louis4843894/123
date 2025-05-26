@@ -225,6 +225,22 @@ try {
     }
     unset($reply);
 
+    // 修改第 333 行附近的代碼
+    $post['title'] = htmlspecialchars($post['title'] ?? '');
+    $post['content'] = htmlspecialchars($post['content'] ?? '');
+    $post['author_name'] = htmlspecialchars($post['author_name'] ?? '');
+    $post['author_student_id'] = htmlspecialchars($post['author_student_id'] ?? '');
+    $post['tags'] = htmlspecialchars($post['tags'] ?? '');
+
+    // 檢查是否已收藏
+    $is_favorited = false;
+    if (isset($_SESSION['user_id'])) {
+        $favorite_sql = "SELECT id FROM post_favorites WHERE user_id = ? AND post_id = ?";
+        $favorite_stmt = $pdo->prepare($favorite_sql);
+        $favorite_stmt->execute([$_SESSION['user_id'], $post_id]);
+        $is_favorited = $favorite_stmt->fetch() !== false;
+    }
+
 } catch (PDOException $e) {
     echo "資料庫錯誤：" . $e->getMessage();
     exit();
@@ -238,6 +254,9 @@ $user_role = $stmt->fetchColumn();
 // ====== 新增：遞迴顯示留言 function ======
 function renderReplies($replies, $user_role, $session_user_id, $level = 0) {
     foreach ($replies as $reply) {
+        $reply['content'] = htmlspecialchars($reply['content'] ?? '');
+        $reply['author_name'] = htmlspecialchars($reply['author_name'] ?? '');
+        $reply['author_student_id'] = htmlspecialchars($reply['author_student_id'] ?? '');
         ?>
         <div class="ms-<?= 5 * $level ?> mb-3">
             <div class="d-flex align-items-center mb-2">
@@ -245,55 +264,27 @@ function renderReplies($replies, $user_role, $session_user_id, $level = 0) {
                     <i class="bi bi-person-circle fs-4"></i>
                 </div>
                 <div>
-                    <div class="fw-bold"><?= htmlspecialchars($reply['author_name']) ?></div>
-                    <div class="text-muted small"><?= htmlspecialchars($reply['author_student_id']) ?></div>
-                </div>
-                <div class="ms-auto text-muted small">
-                    <?= date('Y-m-d H:i:s', strtotime($reply['created_at'])) ?>
+                    <div class="fw-bold"><?= $reply['author_name'] ?></div>
+                    <div class="text-muted small"><?= $reply['author_student_id'] ?></div>
                 </div>
             </div>
-            <div class="ms-5"><?= nl2br(htmlspecialchars($reply['content'])) ?></div>
-            <div class="mt-2 d-flex gap-2">
-                <!-- 回覆按鈕 -->
-                <button type="button" class="btn btn-sm btn-outline-secondary reply-btn"
-                        data-reply-to="<?= $reply['id'] ?>"
-                        data-author="<?= htmlspecialchars($reply['author_name']) ?>">
-                    <i class="bi bi-reply"></i> 回覆
-                </button>
-                <!-- 刪除按鈕 -->
+            <div class="ms-5">
+                <p class="mb-2"><?= nl2br($reply['content']) ?></p>
+                <div class="text-muted small">
+                    <?= date('Y/m/d H:i', strtotime($reply['created_at'])) ?>
                 <?php if ($reply['author_id'] === $session_user_id || $user_role === 'admin'): ?>
-                    <form method="POST" class="d-inline" onsubmit="return confirm('確定要刪除此留言嗎？');">
+                        <form method="POST" class="d-inline" onsubmit="return confirm('確定要刪除這則留言嗎？');">
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                        <input type="hidden" name="delete_reply" value="<?= $reply['id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-trash"></i> 刪除
-                        </button>
+                            <button type="submit" name="delete_reply" value="<?= $reply['id'] ?>" class="btn btn-link btn-sm text-danger p-0 ms-2">刪除</button>
                     </form>
                 <?php endif; ?>
             </div>
-            <!-- 回覆表單 -->
-            <div class="reply-form mt-2" id="reply-form-<?= $reply['id'] ?>" style="display: none;">
-                <form method="POST" class="mt-2">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="parent_id" value="<?= $reply['id'] ?>">
-                    <div class="mb-2">
-                        <textarea class="form-control" name="content" rows="2"
-                                  placeholder="回覆 <?= htmlspecialchars($reply['author_name']) ?>..." required></textarea>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-sm btn-primary">發表回覆</button>
-                        <button type="button" class="btn btn-sm btn-secondary cancel-reply"
-                                data-reply-to="<?= $reply['id'] ?>">取消</button>
-                    </div>
-                </form>
+            </div>
             </div>
             <?php
             if (!empty($reply['replies'])) {
                 renderReplies($reply['replies'], $user_role, $session_user_id, $level + 1);
             }
-            ?>
-        </div>
-        <?php
     }
 }
 // ====== 遞迴 function 結束 ======
@@ -355,24 +346,22 @@ include 'header.php';
             </div>
 
             <!-- 點讚和收藏按鈕 -->
-            <div class="d-flex gap-3">
-                <form method="POST" class="d-inline">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="like_post" value="1">
-                    <button type="submit" class="btn btn-outline-primary">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <button class="btn btn-outline-primary like-btn" data-post-id="<?= $post['id'] ?>">
                         <i class="bi bi-heart<?= $post['is_liked'] ? '-fill' : '' ?>"></i>
-                        讚 <?= $post['like_count'] ?>
+                        <span class="like-count"><?= $post['like_count'] ?? 0 ?></span>
                     </button>
-                </form>
-
-                <form method="POST" class="d-inline">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="favorite_post" value="1">
-                    <button type="submit" class="btn btn-outline-warning">
-                        <i class="bi bi-star<?= $post['is_favorited'] ? '-fill' : '' ?>"></i>
-                        收藏 <?= $post['favorite_count'] ?>
+                    <button class="btn btn-outline-warning favorite-btn" data-post-id="<?= $post['id'] ?>">
+                        <i class="bi bi-bookmark<?= $is_favorited ? '-fill' : '' ?>"></i>
+                        <span class="favorite-count"><?= $post['favorite_count'] ?? 0 ?></span>
                     </button>
-                </form>
+                </div>
+                <div>
+                    <a href="discussion.php" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 返回討論區
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -404,64 +393,49 @@ include 'header.php';
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // 防止表單重複提交
-    const mainForm = document.getElementById('mainReplyForm');
-    const submitBtn = document.getElementById('submitBtn');
-    
-    if (mainForm) {
-        mainForm.addEventListener('submit', function() {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '發布中...';
-        });
-    }
-
-    // 處理回覆按鈕點擊
-    document.querySelectorAll('.reply-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const replyTo = this.dataset.replyTo;
-            const replyForm = document.getElementById(`reply-form-${replyTo}`);
-            if (replyForm) {
-                // 隱藏所有其他回覆表單
-                document.querySelectorAll('.reply-form').forEach(form => {
-                    form.style.display = 'none';
-                });
-                // 顯示所有回覆按鈕
-                document.querySelectorAll('.reply-btn').forEach(btn => {
-                    btn.style.display = 'inline-block';
-                });
-                // 顯示當前回覆表單
-                replyForm.style.display = 'block';
-                // 隱藏當前回覆按鈕
-                this.style.display = 'none';
-                // 聚焦到回覆表單的輸入框
-                replyForm.querySelector('textarea').focus();
+$(document).ready(function() {
+    // 點讚功能
+    $('.like-btn').click(function() {
+        const postId = $(this).data('post-id');
+        const $btn = $(this);
+        const $icon = $btn.find('i');
+        const $count = $btn.find('.like-count');
+        
+        $.post('toggle_like.php', {
+            post_id: postId
+        }, function(response) {
+            if (response.success) {
+                if (response.is_liked) {
+                    $icon.removeClass('bi-heart').addClass('bi-heart-fill');
+                } else {
+                    $icon.removeClass('bi-heart-fill').addClass('bi-heart');
+                }
+                $count.text(response.like_count);
+            } else {
+                alert(response.message || '操作失敗');
             }
         });
     });
 
-    // 處理取消回覆按鈕點擊
-    document.querySelectorAll('.cancel-reply').forEach(button => {
-        button.addEventListener('click', function() {
-            const replyTo = this.dataset.replyTo;
-            const replyForm = document.getElementById(`reply-form-${replyTo}`);
-            const replyBtn = document.querySelector(`.reply-btn[data-reply-to="${replyTo}"]`);
-            if (replyForm && replyBtn) {
-                replyForm.style.display = 'none';
-                replyBtn.style.display = 'inline-block';
-                // 清空回覆表單
-                replyForm.querySelector('textarea').value = '';
-            }
-        });
-    });
-
-    // 防止回覆表單重複提交
-    document.querySelectorAll('.reply-form form').forEach(form => {
-        form.addEventListener('submit', function() {
-            const submitBtn = this.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '發布中...';
+    // 收藏功能
+    $('.favorite-btn').click(function() {
+        const postId = $(this).data('post-id');
+        const $btn = $(this);
+        const $icon = $btn.find('i');
+        const $count = $btn.find('.favorite-count');
+        
+        $.post('toggle_favorite.php', {
+            post_id: postId
+        }, function(response) {
+            if (response.success) {
+                if (response.is_favorited) {
+                    $icon.removeClass('bi-bookmark').addClass('bi-bookmark-fill');
+                } else {
+                    $icon.removeClass('bi-bookmark-fill').addClass('bi-bookmark');
+                }
+                $count.text(response.favorite_count);
+            } else {
+                alert(response.message || '操作失敗');
             }
         });
     });

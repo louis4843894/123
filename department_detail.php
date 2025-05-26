@@ -479,14 +479,19 @@ include 'header.php';
             .then(data => {
                 const favoriteBtn = document.getElementById('favoriteBtn');
                 const favoriteText = document.getElementById('favoriteText');
+                const heartIcon = favoriteBtn.querySelector('i');
                 if (data.is_favorite) {
                     favoriteBtn.classList.remove('btn-outline-primary');
                     favoriteBtn.classList.add('btn-danger');
                     favoriteText.textContent = '取消收藏';
+                    heartIcon.classList.remove('bi-heart');
+                    heartIcon.classList.add('bi-heart-fill');
                 } else {
                     favoriteBtn.classList.remove('btn-danger');
                     favoriteBtn.classList.add('btn-outline-primary');
                     favoriteText.textContent = '收藏';
+                    heartIcon.classList.remove('bi-heart-fill');
+                    heartIcon.classList.add('bi-heart');
                 }
             })
             .catch(error => console.error('Error:', error));
@@ -497,20 +502,36 @@ include 'header.php';
         const departmentName = '<?php echo htmlspecialchars($department['name']); ?>';
         const isFavorite = this.classList.contains('btn-danger');
         const action = isFavorite ? 'remove' : 'add';
+        const heartIcon = this.querySelector('i');
 
-        fetch('favorite.php', {
+        fetch('check_favorite.php', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json'
             },
-            body: `department_name=${encodeURIComponent(departmentName)}&action=${action}`
+            body: JSON.stringify({
+                department_name: departmentName,
+                action: action
+            })
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                checkFavoriteStatus();
+                if (action === 'add') {
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-danger');
+                    this.querySelector('#favoriteText').textContent = '取消收藏';
+                    heartIcon.classList.remove('bi-heart');
+                    heartIcon.classList.add('bi-heart-fill');
+                } else {
+                    this.classList.remove('btn-danger');
+                    this.classList.add('btn-outline-primary');
+                    this.querySelector('#favoriteText').textContent = '收藏';
+                    heartIcon.classList.remove('bi-heart-fill');
+                    heartIcon.classList.add('bi-heart');
+                }
             } else {
-                alert(data.message);
+                alert(data.message || '操作失敗，請稍後再試');
             }
         })
         .catch(error => {

@@ -1,141 +1,87 @@
 <?php
-session_start();
 require_once 'config.php';
 
 // 檢查是否為管理員
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    header('Location: index.php');
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header('Location: login.php');
     exit;
 }
 
-// 獲取當前維護模式狀態
-$stmt = $pdo->query("SELECT maintenance_mode, maintenance_message FROM system_settings WHERE id = 1");
-$settings = $stmt->fetch(PDO::FETCH_ASSOC);
-$maintenance_mode = $settings['maintenance_mode'] ?? 0;
-$maintenance_message = $settings['maintenance_message'] ?? '系統正在進行維護，請稍後再試。';
-
 // 處理表單提交
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $maintenance_mode = isset($_POST['maintenance_mode']) ? 1 : 0;
+    $maintenance_message = $_POST['maintenance_message'] ?? '系統維護中，請稍後再試。';
+    
     try {
-        $maintenance_mode = isset($_POST['maintenance_mode']) ? 1 : 0;
-        $maintenance_message = $_POST['maintenance_message'] ?? '系統正在進行維護，請稍後再試。';
-
-        $stmt = $pdo->prepare("UPDATE system_settings SET 
-            maintenance_mode = :maintenance_mode,
-            maintenance_message = :maintenance_message,
-            updated_at = NOW()
-            WHERE id = 1");
+        // 更新或插入系統設定
+        $stmt = $pdo->prepare("INSERT INTO system_settings (id, maintenance_mode, maintenance_message) 
+                              VALUES (1, ?, ?) 
+                              ON DUPLICATE KEY UPDATE 
+                              maintenance_mode = VALUES(maintenance_mode),
+                              maintenance_message = VALUES(maintenance_message)");
+        $stmt->execute([$maintenance_mode, $maintenance_message]);
         
-        $stmt->execute([
-            ':maintenance_mode' => $maintenance_mode,
-            ':maintenance_message' => $maintenance_message
-        ]);
-
-        if ($stmt->rowCount() === 0) {
-            $stmt = $pdo->prepare("INSERT INTO system_settings 
-                (maintenance_mode, maintenance_message, created_at, updated_at) 
-                VALUES (:maintenance_mode, :maintenance_message, NOW(), NOW())");
-            
-            $stmt->execute([
-                ':maintenance_mode' => $maintenance_mode,
-                ':maintenance_message' => $maintenance_message
-            ]);
-        }
-
-        $_SESSION['success_message'] = '維護模式設定已更新';
+        $_SESSION['success_message'] = '系統設定已更新';
+        header('Location: system_settings.php');
+        exit;
     } catch (PDOException $e) {
-        $_SESSION['error_message'] = '更新維護模式設定時發生錯誤：' . $e->getMessage();
+        $error_message = '更新設定時發生錯誤：' . $e->getMessage();
     }
+}
 
-    header('Location: system_settings.php');
-    exit;
+// 獲取當前設定
+try {
+    $stmt = $pdo->query("SELECT maintenance_mode, maintenance_message FROM system_settings WHERE id = 1");
+    $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $settings = [
+        'maintenance_mode' => 0,
+        'maintenance_message' => '系統維護中，請稍後再試。'
+    ];
 }
 
 $pageTitle = '系統設定';
 include 'header.php';
 ?>
 
-<style>
-    .settings-card {
-        background-color: white;
-        border-radius: 0.5rem;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .settings-section {
-        margin-bottom: 2rem;
-    }
-
-    .settings-title {
-        color: #2c3e50;
-        margin-bottom: 1.5rem;
-    }
-</style>
-
-<div class="container mt-2 pt-2">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="mb-4">系統設定</h2>
-            
+<div class="container mt-4">
+    <h2>系統設定</h2>
+    
+    <?php if (isset($_SESSION['success_message'])): ?>
+        <div class="alert alert-success">
+            <?php 
+            echo $_SESSION['success_message'];
+            unset($_SESSION['success_message']);
+            ?>
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-8">
-            <!-- 系統基本設定 -->
-            <div class="settings-card settings-section">
-                <h4 class="settings-title">基本設定</h4>
-                <form method="POST" action="update_settings.php">
-                    <div class="mb-3">
-                        <label class="form-label">系統名稱</label>
-                        <input type="text" class="form-control" name="system_name" value="輔仁大學轉系系統">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">系統描述</label>
-                        <textarea class="form-control" name="system_description" rows="3">輔仁大學轉系資訊整合平台</textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">儲存設定</button>
-                </form>
-            </div>
-
-            <!-- 系統維護設定 -->
-            <div class="settings-card settings-section">
-                <h4 class="settings-title">系統維護</h4>
-                <form method="POST" action="">
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="maintenance_mode" name="maintenance_mode" <?php echo $maintenance_mode ? 'checked' : ''; ?>>
-                            <label class="form-check-label" for="maintenance_mode">啟用維護模式</label>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="maintenance_message" class="form-label">維護訊息</label>
-                        <textarea class="form-control" id="maintenance_message" name="maintenance_message" rows="3"><?php echo htmlspecialchars($maintenance_message); ?></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">儲存設定</button>
-                </form>
-            </div>
+    <?php endif; ?>
+    
+    <?php if (isset($error_message)): ?>
+        <div class="alert alert-danger">
+            <?php echo $error_message; ?>
         </div>
-
-        <div class="col-md-4">
-            <!-- 系統資訊 -->
-            <div class="settings-card">
-                <h4 class="settings-title">系統資訊</h4>
+    <?php endif; ?>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="">
                 <div class="mb-3">
-                    <label class="form-label fw-bold">PHP 版本</label>
-                    <p><?= PHP_VERSION ?></p>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="maintenance_mode" name="maintenance_mode" 
+                               <?php echo ($settings['maintenance_mode'] ?? 0) ? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="maintenance_mode">維護模式</label>
+                    </div>
                 </div>
+                
                 <div class="mb-3">
-                    <label class="form-label fw-bold">MySQL 版本</label>
-                    <p><?= $pdo->query('select version()')->fetchColumn() ?></p>
+                    <label for="maintenance_message" class="form-label">維護訊息</label>
+                    <textarea class="form-control" id="maintenance_message" name="maintenance_message" rows="3"><?php 
+                        echo htmlspecialchars($settings['maintenance_message'] ?? '系統維護中，請稍後再試。'); 
+                    ?></textarea>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">伺服器資訊</label>
-                    <p><?= $_SERVER['SERVER_SOFTWARE'] ?></p>
-                </div>
-            </div>
+                
+                <button type="submit" class="btn btn-primary">儲存設定</button>
+            </form>
         </div>
     </div>
 </div>

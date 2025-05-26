@@ -418,7 +418,10 @@ include 'header.php';
         document.addEventListener("DOMContentLoaded", function () {
         // 初始化所有按鈕的狀態
         function initializeCompareButtons() {
-            const compareList = JSON.parse(localStorage.getItem('compare_departments') || '[]');
+            // 從服務器獲取比較列表
+            fetch('get_compare_list.php')
+                .then(response => response.json())
+                .then(compareList => {
             document.querySelectorAll('.toggle-compare-btn').forEach(btn => {
                 const deptName = btn.dataset.dept;
                 if (compareList.includes(deptName)) {
@@ -438,10 +441,11 @@ include 'header.php';
             const countElements = document.querySelectorAll('#compare-count');
             countElements.forEach(element => {
                 element.textContent = compareList.length;
+                    });
             });
         }
 
-        // ✅ 搜尋清空 → 回首頁
+        // 搜尋清空 → 回首頁
             const searchInput = document.querySelector("input[name='search']");
         if (searchInput) {
             searchInput.addEventListener("input", function () {
@@ -453,7 +457,7 @@ include 'header.php';
             });
         }
 
-        // ✅ 學院篩選（點同一顆再點 → 還原全部）＋ 隱藏分頁
+        // 學院篩選（點同一顆再點 → 還原全部）＋ 隱藏分頁
         let currentCollege = null;
         document.querySelectorAll('.college-filter').forEach(button => {
             button.addEventListener('click', () => {
@@ -484,7 +488,7 @@ include 'header.php';
             });
         });
 
-        // ✅ 即時加入／移除比較按鈕（不刷新頁面）
+        // 即時加入／移除比較按鈕（不刷新頁面）
         document.addEventListener("click", function (e) {
             const btn = e.target.closest(".toggle-compare-btn");
             if (!btn) return;
@@ -498,46 +502,7 @@ include 'header.php';
                 const deptName = btn.dataset.dept;
                 const action = btn.dataset.action;
 
-                // 檢查是否達到最大比較數量
-                if (action === "add") {
-                    const compareList = JSON.parse(localStorage.getItem('compare_departments') || '[]');
-                    if (compareList.length >= 3 && !compareList.includes(deptName)) {
-                        alert('最多只能同時比較3個系所，請先移除其中一個系所後再進行添加');
-                        return;
-                    }
-                }
-
-                // 更新按鈕狀態
-                if (action === "add") {
-                    btn.classList.remove("btn-add");
-                    btn.classList.add("btn-remove");
-                    btn.textContent = '移出比較';
-                    btn.dataset.action = "remove";
-                } else {
-                    btn.classList.remove("btn-remove");
-                    btn.classList.add("btn-add");
-                    btn.textContent = '加入比較';
-                    btn.dataset.action = "add";
-                }
-
-                // 更新 localStorage
-                let compareList = JSON.parse(localStorage.getItem('compare_departments') || '[]');
-                if (action === "add") {
-                    if (!compareList.includes(deptName)) {
-                        compareList.push(deptName);
-                    }
-                } else {
-                    compareList = compareList.filter(dept => dept !== deptName);
-                }
-                localStorage.setItem('compare_departments', JSON.stringify(compareList));
-                
-                // 更新計數器
-                const countElements = document.querySelectorAll('#compare-count');
-                countElements.forEach(element => {
-                    element.textContent = compareList.length;
-                });
-
-                // 更新後端
+                // 發送請求到服務器
                 fetch('compare_toggle.php', {
                     method: 'POST',
                     headers: {
@@ -550,31 +515,27 @@ include 'header.php';
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'error') {
-                        alert(data.message);
-                        // 如果發生錯誤，恢復按鈕狀態
-                        if (action === 'add') {
-                            btn.classList.remove('btn-remove');
-                            btn.classList.add('btn-add');
-                            btn.textContent = '加入比較';
-                            btn.dataset.action = 'add';
-                            // 恢復 localStorage 和計數器
-                            compareList = compareList.filter(dept => dept !== deptName);
-                        } else {
-                            btn.classList.remove('btn-add');
-                            btn.classList.add('btn-remove');
+                    if (data.status === 'success') {
+                        // 更新按鈕狀態
+                        if (action === "add") {
+                            btn.classList.remove("btn-add");
+                            btn.classList.add("btn-remove");
                             btn.textContent = '移出比較';
-                            btn.dataset.action = 'remove';
-                            // 恢復 localStorage 和計數器
-                            if (!compareList.includes(deptName)) {
-                                compareList.push(deptName);
+                            btn.dataset.action = "remove";
+                        } else {
+                            btn.classList.remove("btn-remove");
+                            btn.classList.add("btn-add");
+                            btn.textContent = '加入比較';
+                            btn.dataset.action = "add";
                             }
-                        }
-                        localStorage.setItem('compare_departments', JSON.stringify(compareList));
+
                         // 更新計數器
+                        const countElements = document.querySelectorAll('#compare-count');
                         countElements.forEach(element => {
-                            element.textContent = compareList.length;
+                            element.textContent = data.count;
                         });
+                    } else {
+                        alert(data.message);
                     }
                 })
                 .catch(error => {

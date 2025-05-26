@@ -96,7 +96,7 @@ include 'header.php';
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>討論區</h1>
         <div>
-            <a href="my_favorites.php" class="btn btn-outline-warning me-2">
+            <a href="my_post_favorites.php" class="btn btn-outline-warning me-2">
                 <i class="bi bi-star"></i> 我的收藏
             </a>
             <a href="post_new.php" class="btn btn-primary">
@@ -170,8 +170,8 @@ include 'header.php';
                             </h5>
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <small class="text-muted">
-                                    作者：<?= htmlspecialchars($post['username']) ?> | 
-                                    系所：<?= htmlspecialchars($post['department_name']) ?> | 
+                                    作者：<?= htmlspecialchars($post['username'] ?? '') ?> | 
+                                    系所：<?= htmlspecialchars($post['department_name'] ?? '') ?> | 
                                     發表時間：<?= date('Y-m-d H:i:s', strtotime($post['created_at'])) ?>
                                 </small>
                                 <span class="badge bg-primary">
@@ -179,8 +179,8 @@ include 'header.php';
                                 </span>
                             </div>
                             <p class="card-text">
-                                <?= nl2br(htmlspecialchars(substr($post['content'], 0, 200))) ?>
-                                <?= strlen($post['content']) > 200 ? '...' : '' ?>
+                                <?= nl2br(htmlspecialchars(substr($post['content'] ?? '', 0, 200))) ?>
+                                <?= strlen($post['content'] ?? '') > 200 ? '...' : '' ?>
                             </p>
                             <?php if (!empty($post['tags'])): ?>
                                 <div class="mt-2">
