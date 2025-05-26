@@ -8,6 +8,49 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role
     exit;
 }
 
+// 獲取當前維護模式狀態
+$stmt = $pdo->query("SELECT maintenance_mode, maintenance_message FROM system_settings WHERE id = 1");
+$settings = $stmt->fetch(PDO::FETCH_ASSOC);
+$maintenance_mode = $settings['maintenance_mode'] ?? 0;
+$maintenance_message = $settings['maintenance_message'] ?? '系統正在進行維護，請稍後再試。';
+
+// 處理表單提交
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $maintenance_mode = isset($_POST['maintenance_mode']) ? 1 : 0;
+        $maintenance_message = $_POST['maintenance_message'] ?? '系統正在進行維護，請稍後再試。';
+
+        $stmt = $pdo->prepare("UPDATE system_settings SET 
+            maintenance_mode = :maintenance_mode,
+            maintenance_message = :maintenance_message,
+            updated_at = NOW()
+            WHERE id = 1");
+        
+        $stmt->execute([
+            ':maintenance_mode' => $maintenance_mode,
+            ':maintenance_message' => $maintenance_message
+        ]);
+
+        if ($stmt->rowCount() === 0) {
+            $stmt = $pdo->prepare("INSERT INTO system_settings 
+                (maintenance_mode, maintenance_message, created_at, updated_at) 
+                VALUES (:maintenance_mode, :maintenance_message, NOW(), NOW())");
+            
+            $stmt->execute([
+                ':maintenance_mode' => $maintenance_mode,
+                ':maintenance_message' => $maintenance_message
+            ]);
+        }
+
+        $_SESSION['success_message'] = '維護模式設定已更新';
+    } catch (PDOException $e) {
+        $_SESSION['error_message'] = '更新維護模式設定時發生錯誤：' . $e->getMessage();
+    }
+
+    header('Location: system_settings.php');
+    exit;
+}
+
 $pageTitle = '系統設定';
 include 'header.php';
 ?>
@@ -60,18 +103,18 @@ include 'header.php';
             <!-- 系統維護設定 -->
             <div class="settings-card settings-section">
                 <h4 class="settings-title">系統維護</h4>
-                <form method="POST" action="maintenance_mode.php">
+                <form method="POST" action="">
                     <div class="mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="maintenanceMode" name="maintenance_mode">
-                            <label class="form-check-label" for="maintenanceMode">啟用維護模式</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="maintenance_mode" name="maintenance_mode" <?php echo $maintenance_mode ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="maintenance_mode">啟用維護模式</label>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">維護說明訊息</label>
-                        <textarea class="form-control" name="maintenance_message" rows="3">系統正在進行維護，請稍後再試。</textarea>
+                        <label for="maintenance_message" class="form-label">維護訊息</label>
+                        <textarea class="form-control" id="maintenance_message" name="maintenance_message" rows="3"><?php echo htmlspecialchars($maintenance_message); ?></textarea>
                     </div>
-                    <button type="submit" class="btn btn-warning">更新維護狀態</button>
+                    <button type="submit" class="btn btn-primary">儲存設定</button>
                 </form>
             </div>
         </div>

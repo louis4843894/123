@@ -24,7 +24,8 @@ $stmt = $pdo->query("
         d.intro,
         d.careers,
         dt.exam_subjects,
-        dt.data_review_ratio
+        dt.data_review_ratio,
+        dt.notes
     FROM departments d
     LEFT JOIN DepartmentTransfer dt ON d.name = dt.department_name
     ORDER BY d.name ASC
@@ -274,8 +275,12 @@ $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <textarea name="exam_subjects" id="editDeptExamSubjects" class="form-control" rows="3" required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">資料準備</label>
+                        <label class="form-label">資料審查比例</label>
                         <textarea name="data_review_ratio" id="editDeptDataReviewRatio" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">備註</label>
+                        <textarea name="notes" id="editDeptNotes" class="form-control" rows="4"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -369,6 +374,7 @@ document.querySelectorAll('[data-bs-target="#editDepartmentModal"]').forEach(but
                     document.getElementById('editDeptCareers').value = dept.careers;
                     document.getElementById('editDeptExamSubjects').value = dept.exam_subjects;
                     document.getElementById('editDeptDataReviewRatio').value = dept.data_review_ratio;
+                    document.getElementById('editDeptNotes').value = dept.notes || '';
                 } else {
                     alert('獲取系所資料失敗：' + data.message);
                 }

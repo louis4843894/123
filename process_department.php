@@ -51,14 +51,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         year_3_enrollment, 
                         year_4_enrollment,
                         exam_subjects, 
-                        data_review_ratio
+                        data_review_ratio,
+                        notes
                     ) VALUES (
                         :department_name,
                         :year_2_enrollment, 
                         :year_3_enrollment, 
                         :year_4_enrollment,
                         :exam_subjects, 
-                        :data_review_ratio
+                        :data_review_ratio,
+                        :notes
                     )
                 ");
                 
@@ -68,7 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'year_3_enrollment' => intval($_POST['year_3_enrollment']),
                     'year_4_enrollment' => intval($_POST['year_4_enrollment']),
                     'exam_subjects' => $_POST['exam_subjects'],
-                    'data_review_ratio' => $_POST['data_review_ratio']
+                    'data_review_ratio' => $_POST['data_review_ratio'],
+                    'notes' => $_POST['notes']
                 ]);
 
                 $pdo->commit();
@@ -111,7 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         year_3_enrollment = :year_3_enrollment,
                         year_4_enrollment = :year_4_enrollment,
                         exam_subjects = :exam_subjects,
-                        data_review_ratio = :data_review_ratio
+                        data_review_ratio = :data_review_ratio,
+                        notes = :notes
                     WHERE department_name = :department_name
                 ");
                 
@@ -121,7 +125,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'year_3_enrollment' => intval($_POST['year_3_enrollment']),
                     'year_4_enrollment' => intval($_POST['year_4_enrollment']),
                     'exam_subjects' => $_POST['exam_subjects'],
-                    'data_review_ratio' => $_POST['data_review_ratio']
+                    'data_review_ratio' => $_POST['data_review_ratio'],
+                    'notes' => $_POST['notes']
                 ]);
 
                 $pdo->commit();
@@ -183,7 +188,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                             dt.year_3_enrollment,
                             dt.year_4_enrollment,
                             dt.exam_subjects,
-                            dt.data_review_ratio
+                            dt.data_review_ratio,
+                            dt.notes
                         FROM departments d
                         LEFT JOIN DepartmentTransfer dt ON d.name = dt.department_name
                         WHERE d.id = :id

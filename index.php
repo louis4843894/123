@@ -66,20 +66,17 @@ include 'header.php';
                         </a>
                     </li>
                     <li class="nav-item mb-2">
-                        <a href="time.php" class="nav-link btn btn-secondary text-white fw-bold mb-2">
-                            <i class="bi bi-calendar-event"></i> 時程表
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a href="#" class="nav-link btn btn-secondary text-white fw-bold mb-2">
-                            <i class="bi bi-bell"></i> 設定提醒
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
                         <a href="transfer_qa.php" class="nav-link btn btn-secondary text-white fw-bold mb-2">
                             <i class="bi bi-question-circle"></i> 轉系 Q&A
                         </a>
                     </li>
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                    <li class="nav-item mb-2">
+                        <a href="my_favorites.php" class="nav-link btn btn-secondary text-white fw-bold mb-2">
+                            <i class="bi bi-heart"></i> 我的收藏
+                        </a>
+                    </li>
+                    <?php endif; ?>
                 </ul>
 
                 <?php if (isset($_SESSION['user_id'])): ?>
@@ -215,8 +212,8 @@ include 'header.php';
                                                         data-dept="<?= htmlspecialchars($dept['department_name']) ?>"
                                                         data-action="add">
                                                     加入比較
-                                                </button>
-                                            </div>
+                                                                    </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -418,7 +415,7 @@ include 'header.php';
     });
 
     // 處理比較按鈕點擊
-    document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", function () {
         // 初始化所有按鈕的狀態
         function initializeCompareButtons() {
             const compareList = JSON.parse(localStorage.getItem('compare_departments') || '[]');
@@ -445,7 +442,7 @@ include 'header.php';
         }
 
         // ✅ 搜尋清空 → 回首頁
-        const searchInput = document.querySelector("input[name='search']");
+            const searchInput = document.querySelector("input[name='search']");
         if (searchInput) {
             searchInput.addEventListener("input", function () {
                 if (searchInput.value.trim() === "") {

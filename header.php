@@ -2,7 +2,23 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+require_once 'config.php';
+require_once 'check_maintenance.php';
+
+// 檢查維護模式
+checkMaintenanceMode($pdo);
+
 $pageTitle = $pageTitle ?? '轉系系統'; 
+
+// 記錄當前頁面作為下一個頁面的「上一個頁面」
+$current_url = $_SERVER['REQUEST_URI'];
+if (!isset($_SESSION['previous_page']) || $_SESSION['previous_page'] !== $current_url) {
+    $_SESSION['last_page'] = $_SESSION['previous_page'] ?? 'index.php';
+    $_SESSION['previous_page'] = $current_url;
+}
+
+// 判斷是否為管理員
+$is_admin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
 ?>
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -22,17 +38,17 @@ $pageTitle = $pageTitle ?? '轉系系統';
             padding-bottom: 0.75rem;
             min-height: 60px;
         }
-        
+
         .navbar .btn {
             padding: 0.375rem 1rem;
             font-size: 0.95rem;
         }
-        
+
         .navbar-brand {
             font-size: 1.1rem;
             padding: 0;
         }
-        
+
         .navbar-brand img {
             width: 28px;
             height: 28px;
@@ -46,49 +62,42 @@ $pageTitle = $pageTitle ?? '轉系系統';
         <div class="container">
             <div class="d-flex align-items-center">
                 <?php if (basename($_SERVER['PHP_SELF']) !== 'index.php'): ?>
-                <a href="javascript:history.back()" class="btn btn-outline-light me-3">
+                <a href="<?php echo $_SESSION['last_page']; ?>" class="btn btn-outline-light me-3">
                     <i class="bi bi-arrow-left"></i> 回上頁
                 </a>
                 <?php endif; ?>
-                <a class="navbar-brand" href="index.php">
-                    <img src="https://upload.wikimedia.org/wikipedia/zh/thumb/d/da/Fu_Jen_Catholic_University_logo.svg/1200px-Fu_Jen_Catholic_University_logo.svg.png"
-                        alt="" width="30" height="30" class="d-inline-block align-text-top me-2">輔仁大學轉系系統
-                </a>
+                <a class="navbar-brand" href="<?php 
+                    if ($is_admin) {
+                        echo 'admin_dashboard.php';
+                    } else {
+                        echo 'index.php';
+                    }
+                ?>">
+                <img src="https://upload.wikimedia.org/wikipedia/zh/thumb/d/da/Fu_Jen_Catholic_University_logo.svg/1200px-Fu_Jen_Catholic_University_logo.svg.png"
+                    alt="" width="30" height="30" class="d-inline-block align-text-top me-2">輔仁大學轉系系統
+            </a>
             </div>
             <div class="d-flex align-items-center">
-                <?php 
-                $current_page = basename($_SERVER['PHP_SELF']);
-                $is_admin_page = ($current_page === 'admin_dashboard.php' || $current_page === 'admin.php');
-                
-                if (!$is_admin_page): 
+                <?php if ($is_admin): ?>
+                    <a href="logout.php" class="btn btn-outline-light me-2">登出</a>
+                <?php else: ?>
+                    <?php 
+                    $current_page = basename($_SERVER['PHP_SELF']);
                     if (isset($_SESSION['user_id'])): ?>
                         <a href="compare.php" class="btn btn-outline-light me-2" id="compareButton">
                             <i class="bi bi-arrow-left-right"></i> 比較系所
                             <span class="badge bg-light text-dark" id="compare-count">0</span>
                         </a>
-                    <?php else: ?>
-                        <a href="#" class="btn btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#loginModal">
-                            <i class="bi bi-arrow-left-right"></i> 比較系所
-                            <span class="badge bg-light text-dark" id="compare-count">0</span>
-                        </a>
-                    <?php endif;
-                endif; ?>
-
-                <?php if (isset($_SESSION['user_id'])): ?>
-                    <?php if ($current_page === 'admin_dashboard.php'): ?>
-                        <a href="logout.php" class="btn btn-outline-light me-2">登出</a>
-                    <?php else: ?>
-                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                        <a href="admin.php" class="btn btn-outline-light me-2">
-                            <i class="bi bi-gear"></i> 管理人員
-                        </a>
-                        <?php endif; ?>
                         <a href="account_settings.php" class="btn btn-outline-light me-2">帳號設定</a>
                         <a href="logout.php" class="btn btn-outline-light me-2">登出</a>
-                    <?php endif; ?>
-                <?php else: ?>
+                    <?php else: ?>
+                        <a href="#" class="btn btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#loginModal">
+                    <i class="bi bi-arrow-left-right"></i> 比較系所
+                    <span class="badge bg-light text-dark" id="compare-count">0</span>
+                </a>
                     <a href="login.php" class="btn btn-outline-light me-2">登入</a>
                     <a href="register.php" class="btn btn-outline-light me-2">註冊</a>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>

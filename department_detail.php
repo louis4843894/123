@@ -53,7 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // 獲取系所信息
 try {
     // 先獲取系所基本資訊
-    $stmt = $pdo->prepare("SELECT * FROM DepartmentTransfer WHERE department_name = ?");
+    $stmt = $pdo->prepare("SELECT d.*, dt.year_2_enrollment, dt.year_3_enrollment, dt.year_4_enrollment, 
+            dt.exam_subjects, dt.data_review_ratio, dt.notes
+            FROM departments d 
+            LEFT JOIN DepartmentTransfer dt ON d.name = dt.department_name 
+            WHERE d.name = ?");
     $stmt->execute([$department_name]);
     $department = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -81,7 +85,7 @@ try {
     exit();
 }
 
-$pageTitle = $department['department_name'] . ' - 詳細資訊';
+$pageTitle = $department['name'] . ' - 詳細資訊';
 include 'header.php';
 ?>
 
@@ -267,7 +271,12 @@ include 'header.php';
 
 <div class="container mt-2 pt-2">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0"><?php echo htmlspecialchars($department['department_name']); ?></h2>
+        <h2 class="mb-0"><?php echo htmlspecialchars($department['name']); ?></h2>
+        <?php if (isset($_SESSION['user_id'])): ?>
+            <button id="favoriteBtn" class="btn btn-outline-primary">
+                <i class="bi bi-heart"></i> <span id="favoriteText">收藏</span>
+            </button>
+        <?php endif; ?>
     </div>
 
                 <div class="card">
@@ -296,13 +305,24 @@ include 'header.php';
                         <?php echo $department['exam_subjects'] ? htmlspecialchars($department['exam_subjects']) : '無'; ?>
                                 </div>
                                 <div class="info-item">
-                        <span class="info-label">資料審查比例：</span>
-                        <?php echo $department['data_review_ratio'] ? htmlspecialchars($department['data_review_ratio']) : '無'; ?>
+                                    <span class="info-label">資料審查比例：</span>
+                        <?php echo htmlspecialchars($department['data_review_ratio'] ?? '無資料'); ?>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <?php if (!empty($department['notes'])): ?>
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">備註</h5>
+                    </div>
+                    <div class="card-body">
+                        <?php echo nl2br(htmlspecialchars($department['notes'])); ?>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- 系所簡介卡片 -->
                 <div class="card">
@@ -387,7 +407,7 @@ include 'header.php';
 
     <!-- 比較按鈕 -->
 <div class="compare-button-fixed">
-    <button onclick="toggleCompare('<?php echo htmlspecialchars($department['department_name']); ?>')" 
+    <button onclick="toggleCompare('<?php echo htmlspecialchars($department['name']); ?>')" 
             class="btn btn-compare btn-lg" 
             id="compareBtn">
                     <i class="bi bi-plus-circle"></i> 加入比較
@@ -431,7 +451,7 @@ include 'header.php';
 
     // 頁面載入時初始化按鈕狀態
     document.addEventListener('DOMContentLoaded', function() {
-        const departmentName = '<?php echo htmlspecialchars($department['department_name']); ?>';
+        const departmentName = '<?php echo htmlspecialchars($department['name']); ?>';
         updateCompareButton(departmentName);
     });
 
@@ -450,6 +470,61 @@ include 'header.php';
             editBtn.style.display = 'block';
         }
     }
+
+    // 檢查收藏狀態
+    function checkFavoriteStatus() {
+        const departmentName = '<?php echo htmlspecialchars($department['name']); ?>';
+        fetch('check_favorite.php?department_name=' + encodeURIComponent(departmentName))
+            .then(response => response.json())
+            .then(data => {
+                const favoriteBtn = document.getElementById('favoriteBtn');
+                const favoriteText = document.getElementById('favoriteText');
+                if (data.is_favorite) {
+                    favoriteBtn.classList.remove('btn-outline-primary');
+                    favoriteBtn.classList.add('btn-danger');
+                    favoriteText.textContent = '取消收藏';
+                } else {
+                    favoriteBtn.classList.remove('btn-danger');
+                    favoriteBtn.classList.add('btn-outline-primary');
+                    favoriteText.textContent = '收藏';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // 處理收藏按鈕點擊
+    document.getElementById('favoriteBtn')?.addEventListener('click', function() {
+        const departmentName = '<?php echo htmlspecialchars($department['name']); ?>';
+        const isFavorite = this.classList.contains('btn-danger');
+        const action = isFavorite ? 'remove' : 'add';
+
+        fetch('favorite.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `department_name=${encodeURIComponent(departmentName)}&action=${action}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                checkFavoriteStatus();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('操作失敗，請稍後再試');
+        });
+    });
+
+    // 頁面載入時檢查收藏狀態
+    document.addEventListener('DOMContentLoaded', function() {
+        checkFavoriteStatus();
+    });
 </script>
+    
+    <?php include 'footer.php'; ?>
     
     <?php include 'footer.php'; ?>
