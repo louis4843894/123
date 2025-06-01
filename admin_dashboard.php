@@ -13,11 +13,10 @@ include 'header.php';
 
 // 獲取一些基本統計數據
 $stats = [
-    'total_users' => $pdo->query("SELECT COUNT(*) FROM users WHERE role != 'admin'")->fetchColumn(),
-    'total_admins' => $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn(),
+    'total_users'       => $pdo->query("SELECT COUNT(*) FROM users WHERE role != 'admin'")->fetchColumn(),
+    'total_admins'      => $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn(),
     'total_departments' => $pdo->query("SELECT COUNT(*) FROM departments")->fetchColumn(),
 ];
-
 ?>
 
 <style>
@@ -125,6 +124,15 @@ $stats = [
                 <a href="system_settings.php" class="btn quick-action-btn mb-3">
                     <i class="bi bi-gear-fill"></i> 系統設定
                 </a>
+
+                <!-- 新增：轉系時程表管理 -->
+                <a href="manage_transfer_schedule.php" class="btn quick-action-btn mb-3">
+                    <i class="bi bi-calendar-check-fill"></i> 轉系時程表管理
+                </a>
+                <!-- 新增：面筆試時程表管理 -->
+                <a href="manage_exam_schedule.php" class="btn quick-action-btn">
+                    <i class="bi bi-pencil-square"></i> 面筆試時程表管理
+                </a>
             </div>
         </div>
     </div>
@@ -167,4 +175,4 @@ $stats = [
     </div>
 </div>
 
-<?php include 'footer.php'; ?> 
+<?php include 'footer.php'; ?>

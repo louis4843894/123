@@ -1,81 +1,93 @@
 <?php
+// time_table.php or manage_exam_schedule.php
+session_start();
+require_once 'config.php';  // $pdo 應已初始化
+
 $pageTitle = '各系面試筆試時程表';
-include 'time_header.php';
-$schedules = [
-    ['date' => '由系辦聯繫告知', 'event' => '中國文學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '由系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '歷史學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '由系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '哲學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '由系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '人文與社區創新學士學位學程', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '由系辦聯繫告知'],
-    ['date' => '2025-03-17', 'event' => '音樂系', 'type' => '筆試', 'time' => '由系辦聯繫告知', 'location' => '由系辦聯繫告知'],
-    ['date' => '2025-03-20', 'event' => '音樂系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '由系辦聯繫告知'],
-    ['date' => '2025-04-23', 'event' => '應用美術系', 'type' => '筆試', 'time' => '13:30~15:00', 'location' => '由系辦聯繫告知'],
-    ['date' => '2025-04-21', 'event' => '景觀設計學系', 'type' => '面試', 'time' => '10:00', 'location' => '考試當日公告於藝術學院三樓'],
-    ['date' => '由系辦聯繫告知', 'event' => '新聞傳播學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '由系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '影像傳播學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '廣告傳播學系', 'type' => '面試', 'time' => '12:00', 'location' => '廣告系辦'],
-    ['date' => '2025-04-16', 'event' => '圖書資訊學系', 'type' => '面試', 'time' => '12:30', 'location' => '文開樓LE507'],
-    ['date' => '2025-04-18', 'event' => '教育領導與科技發展學士學位學程', 'type' => '面試', 'time' => '13:20', 'location' => '文開樓LE615'],
-    ['date' => '由系辦聯繫告知', 'event' => '公共衛生學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '醫學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '醫學系', 'type' => '筆試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '護理學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '2025-04-30', 'event' => '職能治療學系', 'type' => '面試', 'time' => '13:15', 'location' => '國璽樓MD847'],
-    ['date' => '2025-04-14', 'event' => '臨床心理學系', 'type' => '面試', 'time' => '13:30', 'location' => '國璽樓MD570'],
-    ['date' => '2025-04-16', 'event' => '呼吸治療學系', 'type' => '面試', 'time' => '13:50', 'location' => '國璽樓MD824'],
-    ['date' => '2025-03-27', 'event' => '英國語文學系', 'type' => '筆試', 'time' => '12:30', 'location' => '外語學院FG308'],
-    ['date' => '2025-04-16', 'event' => '英國語文學系', 'type' => '面試', 'time' => '13:40', 'location' => '系辦聯繫告知'],
-    ['date' => '2025-04-14', 'event' => '法國語文學系', 'type' => '面試', 'time' => '12:35', 'location' => '外語學院LA204'],
-    ['date' => '2025-04-22', 'event' => '日本語文學系', 'type' => '筆試', 'time' => '12:40-13:30', 'location' => '外語學院LA314'],
-    ['date' => '2025-04-23', 'event' => '日本語文學系', 'type' => '面試', 'time' => '12:40', 'location' => '外語學院LA114'],
-    ['date' => '2025-04-18', 'event' => '義大利語文學系', 'type' => '面試', 'time' => '13:00', 'location' => '外語學院LA214'],
-    ['date' => '2025-03-27', 'event' => '國際溝通與科技創新學士學位學程(英文組)', 'type' => '筆試', 'time' => '12:30-13:30', 'location' => '外語學院FG308'],
-    ['date' => '2025-04-16', 'event' => '國際溝通與科技創新學士學位學程(英文組)', 'type' => '面試', 'time' => '13:40', 'location' => '外語學院LA301'],
-    ['date' => '2025-04-16', 'event' => '國際溝通與科技創新學士學位學程(義文組)', 'type' => '筆試', 'time' => '12:30-13:30', 'location' => '外語學院FG308'],
-    ['date' => '2025-04-18', 'event' => '國際溝通與科技創新學士學位學程(義文組)', 'type' => '面試', 'time' => '12:30-13:30', 'location' => '外語學院FG308'],
-    ['date' => '由系辦聯繫告知', 'event' => '織品服裝學系(織品服飾行銷組)', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '織品服裝學系(服飾設計組)', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '織品服裝學系(織品設計組)', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '2025-04-16', 'event' => '餐旅管理學系', 'type' => '面試', 'time' => '12:10', 'location' => '民生學院HE101'],
-    ['date' => '2025-04-23', 'event' => '食品科學系', 'type' => '面試', 'time' => '12:15-12:45', 'location' => '食品科研大樓EP104'],
-    ['date' => '2025-04-17', 'event' => '兒童與家庭學系', 'type' => '面試', 'time' => '12:30', 'location' => '民生二館CF111'],
-    ['date' => '2025-04-30', 'event' => '營養科學系', 'type' => '面試', 'time' => '01:30', 'location' => '民生學院NF151'],
-    ['date' => '2025-04-23', 'event' => '法律學系', 'type' => '筆試', 'time' => '13:40-15:30', 'location' => '樹德樓LW214'],
-    ['date' => '2025-04-23', 'event' => '財經法律學系', 'type' => '筆試', 'time' => '13:40-15:30', 'location' => '樹德樓LW212'],
-    ['date' => '2025-04-16', 'event' => '心理學系', 'type' => '筆試', 'time' => '12:30-14:00', 'location' => '聖言樓SF237'],
-    ['date' => '2025-04-30', 'event' => '心理學系', 'type' => '面試', 'time' => '12:20', 'location' => '聖言樓SF844'],
-    ['date' => '由系辦聯繫告知', 'event' => '社會工作學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '2025-04-16', 'event' => '經濟學系', 'type' => '面試', 'time' => '13:20', 'location' => '羅耀拉大樓SL375'],
-    ['date' => '2025-04-16', 'event' => '宗教學系', 'type' => '面試', 'time' => '12:10', 'location' => '羅耀拉大樓SL340'],
-    ['date' => '2025-04-23', 'event' => '金融與國際企業學系', 'type' => '面試', 'time' => '12:40 ', 'location' => '利瑪竇大樓LM201'],
-    ['date' => '2025-04-23', 'event' => '企業管理學系', 'type' => '面試', 'time' => '14:00', 'location' => '系辦聯繫告知'],
-    ['date' => '2025-04-17', 'event' => '會計學系', 'type' => '面試', 'time' => '12:30', 'location' => '利瑪竇大樓LM201'],
-    ['date' => '2025-04-25', 'event' => '資訊管理學系', 'type' => '面試', 'time' => '12:30~13:30', 'location' => '利瑪竇大樓LM306'],
-    ['date' => '2025-04-14', 'event' => '統計資訊學系', 'type' => '筆試', 'time' => '12:30~13:30', 'location' => '利瑪竇大樓LM200'],
-    ['date' => '2025-04-15', 'event' => '統計資訊學系', 'type' => '面試', 'time' => '12:30~13:00', 'location' => '利瑪竇大樓LM202'],
-    ['date' => '由系辦聯繫告知', 'event' => '數學系(資訊數學組)', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '數學系(應用數學組)', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '2025-04-23', 'event' => '生命科學系', 'type' => '面試', 'time' => '13:00', 'location' => '耕莘樓LS111'],
-    ['date' => '由系辦聯繫告知', 'event' => '物理學系(物理組)', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '物理學系(光電物理組)', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '物理學系(電子物理組)', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '化學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '資訊工程學系', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-    ['date' => '由系辦聯繫告知', 'event' => '跨領域全英語學士學位學程', 'type' => '面試', 'time' => '由系辦聯繫告知', 'location' => '系辦聯繫告知'],
-];
+include 'header.php';  // 負責 <head>、navbar、動態 <title> 等
+
+try {
+    // 「擷取所有時程、同時把 event 拆掉括號後對到 departments.name，才能取到正確的 college_name」
+    $stmt = $pdo->query("
+        SELECT
+            es.id,
+            es.`event`           AS department_name,
+            es.`type`            AS schedule_type,
+            es.`date`,
+            es.`time`,
+            es.`location`,
+            COALESCE(d.`college_name`, '') AS college_name
+        FROM `exam_schedule` es
+        LEFT JOIN `departments` d
+        ON d.`name` = es.`event`
+        OR d.`name` = TRIM(
+                            SUBSTRING_INDEX(
+                                REPLACE(REPLACE(es.`event`, '（', '('), '）', ')'),
+                                '(',
+                                1
+                            )
+                            )
+        ORDER BY
+            FIELD(es.`date`, '由系辦聯繫告知') ASC,
+            STR_TO_DATE(es.`date`, '%Y-%m-%d') ASC,
+            es.`time` ASC
+    ");
+    $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo "<div class=\"alert alert-danger\">讀取各系面試／筆試時程失敗："
+        . htmlspecialchars($e->getMessage())
+        . "</div>";
+    include 'footer.php';
+    exit;
+}
 ?>
 
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <title>各系面試筆試時程表</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet">
-</head>
+<!-- 以下直接從 <body> 開始輸出 -->
 <body style="font-family: 'Noto Sans TC', sans-serif; background-color: #f7f8fc; margin: 0; padding: 2rem;">
+    <div style="max-width: 1300px; margin: 100px auto 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 0 12px rgba(0,0,0,0.1);">
+        <h1 style="text-align: center; color: #333; margin: 0 0 1rem;">各系面試筆試時程表</h1>
 
-    <!-- ⬇️ Ini dia kotak konten utama -->
-    <div style="max-width: 1000px; margin: 100px auto 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 0 12px rgba(0,0,0,0.1);">
-        <h1 style="text-align: center; color: #333;">各系面試筆試時程表</h1>
+        <!-- ============================ -->
+        <!-- 1. 學院分類按鈕 (改為與 index.php 一致的外觀) -->
+        <!-- ============================ -->
+        <div class="college-filter-wrapper text-center mb-4">
+            <!-- 「顯示全部」按鈕 -->
+            <button 
+                id="btn-college-all" 
+                class="btn btn-Faculty college-filter active" 
+                data-college="all"
+                onclick="filterByCollege('all', this)">
+                顯示全部
+            </button>
+
+            <?php
+            // 先拿一次所有 departments 表裡非空的 college_name，去重複之後輸出
+            try {
+                $cstmt = $pdo->query("
+                SELECT DISTINCT `college_name`
+                FROM `departments`
+                WHERE `college_name` <> ''
+                ORDER BY `college_name` ASC
+                ");
+                $allCols = $cstmt->fetchAll(PDO::FETCH_COLUMN);
+            } catch (PDOException $e) {
+                $allCols = [];
+            }
+
+            foreach ($allCols as $colg):
+            ?>
+                <button 
+                    class="btn btn-Faculty college-filter" 
+                    data-college="<?= htmlspecialchars($colg) ?>"
+                    onclick="filterByCollege('<?= htmlspecialchars($colg) ?>', this)">
+                    <?= htmlspecialchars($colg) ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- ============================ -->
+        <!-- 2. 關鍵字搜尋 -->
+        <!-- ============================ -->
         <div style="text-align: right; margin-bottom: 1rem;">
             <input
                 type="text"
@@ -85,10 +97,15 @@ $schedules = [
                 onkeyup="filterTable()"
             >
         </div>
-        <table id="scheduleTable" style="width: 100%; border-collapse: collapse; margin-top: 3rem;">
+
+        <!-- ============================ -->
+        <!-- 3. 時程列表表格 -->
+        <!-- ============================ -->
+        <table id="scheduleTable" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
             <thead>
-                <tr style="background-color: rgb(140, 140, 140);">
+                <tr style="background-color: rgb(140, 140, 140); color: white;">
                     <th style="border: 1px solid #ccc; padding: 0.75rem;">系所</th>
+                    <th style="border: 1px solid #ccc; padding: 0.75rem;">學院</th>
                     <th style="border: 1px solid #ccc; padding: 0.75rem;">種類</th>
                     <th style="border: 1px solid #ccc; padding: 0.75rem;">日期</th>
                     <th style="border: 1px solid #ccc; padding: 0.75rem;">時間</th>
@@ -96,37 +113,74 @@ $schedules = [
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($schedules as $schedule): ?>
-                <tr>
-                    <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;"><?= htmlspecialchars($schedule['event']) ?></td>
-                    <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;"><?= htmlspecialchars($schedule['type']) ?></td>
-                    <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;"><?= htmlspecialchars($schedule['date']) ?></td>
-                    <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;"><?= htmlspecialchars($schedule['time']) ?></td>
-                    <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;"><?= htmlspecialchars($schedule['location']) ?></td>
-                </tr>
-                <?php endforeach; ?>
+                <?php if (!empty($schedules)): ?>
+                    <?php foreach ($schedules as $row): ?>
+                    <tr data-college="<?= htmlspecialchars($row['college_name']) ?>" style="border-bottom: 1px solid #ddd;">
+                        <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;">
+                            <?= htmlspecialchars($row['department_name']) ?>
+                        </td>
+                        <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;">
+                            <?= htmlspecialchars($row['college_name']) ?>
+                        </td>
+                        <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;">
+                            <?= htmlspecialchars($row['schedule_type']) ?>
+                        </td>
+                        <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;">
+                            <?= htmlspecialchars($row['date']) ?>
+                        </td>
+                        <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;">
+                            <?= htmlspecialchars($row['time']) ?>
+                        </td>
+                        <td style="border: 1px solid #ccc; padding: 0.75rem; text-align: center;">
+                            <?= htmlspecialchars($row['location']) ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="6" style="border: 1px solid #ccc; padding: 1rem; text-align: center;">
+                            目前尚無任何時程資料
+                        </td>
+                    </tr>
+                <?php endif; ?>
             </tbody>
         </table>
-        <button style="display: block; margin: 2rem auto 0; padding: 0.75rem 1.5rem; font-size: 1rem; background-color:rgb(91, 120, 189); color: white; border: none; border-radius: 8px; cursor: pointer;"
-            onmouseover="this.style.backgroundColor='#005fa3';"
-            onmouseout="this.style.backgroundColor='#0078d7';">
-            返回首頁
-        </button>
     </div>
-    <script>
-        function filterTable() {
-            const input = document.getElementById('searchInput').value.trim().toLowerCase();
-            const rows = document.querySelectorAll('#scheduleTable tbody tr');
 
-            rows.forEach(row => {
-                // 將每個儲存格的文字串接起來
-                const text = Array.from(row.cells)
-                                .map(cell => cell.textContent.toLowerCase())
-                                .join(' ');
-                // 包含關鍵字就顯示，否則隱藏
-                row.style.display = text.includes(input) ? '' : 'none';
+    <!-- ============================ -->
+    <!-- 4. JavaScript：學院篩選 + 關鍵字搜尋 -->
+    <!-- ============================ -->
+    <script>
+        // 當前選到的學院 (預設 "all")
+        let currentCollege = 'all';
+
+        // 點按任一學院按鈕時：先切換 active，再呼叫 filterTable()
+        function filterByCollege(college, btn) {
+            currentCollege = college;
+            // 把所有按鈕的 active 樣式移除
+            document.querySelectorAll('.college-filter').forEach(el => el.classList.remove('active'));
+            // 再把當前這顆按鈕加上 active
+            btn.classList.add('active');
+            // 最後更新一次篩選
+            filterTable();
+        }
+
+        // 同時依「學院」和「關鍵字」做篩選
+        function filterTable() {
+            const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+            document.querySelectorAll('#scheduleTable tbody tr').forEach(row => {
+                const rowCollege = row.dataset.college.trim();
+                const matchesCollege = (currentCollege === 'all' || rowCollege === currentCollege);
+
+                const rowText = Array.from(row.cells)
+                                    .map(cell => cell.textContent.toLowerCase())
+                                    .join(' ');
+                const matchesKeyword = rowText.includes(keyword);
+
+                row.style.display = (matchesCollege && matchesKeyword) ? '' : 'none';
             });
         }
     </script>
 </body>
-</html>
+
+<?php include 'footer.php'; ?>
